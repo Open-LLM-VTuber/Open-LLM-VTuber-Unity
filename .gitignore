@@ -73,3 +73,6 @@ crashlytics-build.properties
 
 # macOS 系统生成的无用文件
 .DS_Store
+
+# VSCode生成的配置
+.vscode/
