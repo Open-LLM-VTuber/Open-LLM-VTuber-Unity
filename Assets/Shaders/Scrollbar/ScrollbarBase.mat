@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: SidePanel 3
+  m_Name: ScrollbarBase
   m_Shader: {fileID: 4800000, guid: 9bf1c853d9bb08b49ad11eac1b6d5c7d, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -73,10 +73,10 @@ Material:
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
-    - _Radius: 0.05
-    - _RadiusMaxSmooth: 0.0505
-    - _RadiusMinSmooth: 0.0495
-    - _Ratio: 0.4125
+    - _Radius: 0.04
+    - _RadiusMaxSmooth: 0.0404
+    - _RadiusMinSmooth: 0.0396
+    - _Ratio: 0.08571
     - _Smoothness: 0.01
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
