@@ -274,8 +274,54 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5053966764603746138, guid: aadf0cc39ec409c4495ca6ba11521ca8, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7511212565942596438}
+    - targetCorrespondingSourceObject: {fileID: 6262210418810082583, guid: aadf0cc39ec409c4495ca6ba11521ca8, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2437693548037534630}
   m_SourcePrefab: {fileID: 100100000, guid: aadf0cc39ec409c4495ca6ba11521ca8, type: 3}
+--- !u!1 &3400670622574542366 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5053966764603746138, guid: aadf0cc39ec409c4495ca6ba11521ca8, type: 3}
+  m_PrefabInstance: {fileID: 7571342721411930436}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &7511212565942596438
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3400670622574542366}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cfabb0440166ab443bba8876756fdfa9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_EffectColor: {r: 0, g: 0, b: 0, a: 0.5}
+  m_EffectDistance: {x: 2, y: -2}
+  m_UseGraphicAlpha: 1
+--- !u!1 &4608597651990219859 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6262210418810082583, guid: aadf0cc39ec409c4495ca6ba11521ca8, type: 3}
+  m_PrefabInstance: {fileID: 7571342721411930436}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2437693548037534630
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4608597651990219859}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cfabb0440166ab443bba8876756fdfa9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_EffectColor: {r: 0, g: 0, b: 0, a: 0.5}
+  m_EffectDistance: {x: 2, y: -2}
+  m_UseGraphicAlpha: 1
 --- !u!224 &5968861713746390331 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 4307543568370054271, guid: aadf0cc39ec409c4495ca6ba11521ca8, type: 3}

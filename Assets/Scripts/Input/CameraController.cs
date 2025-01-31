@@ -8,8 +8,9 @@ public class CameraController : MonoBehaviour
     public RawImage rawImage; // 用于显示摄像头画面
     public Image backgroundImage; // 原有背景
 
-    public Sprite cameraOnSprite; // 按钮图片：摄像头打开状态
-    public Sprite cameraOffSprite; // 按钮图片：摄像头关闭状态
+    public Image cameraButton; // 摄像头按钮
+    public Color activeColor = new Color(0f, 0.5f, 1f); // 淡蓝色
+    public Color inactiveColor = new Color(0f, 0f, 0f); // 黑色
 
     public bool mirror = true; // 是否启用镜像
     private bool isCameraOn = false; // 摄像头状态
@@ -19,18 +20,28 @@ public class CameraController : MonoBehaviour
         // 默认隐藏RawImage，显示背景
         rawImage.gameObject.SetActive(false);
         backgroundImage.gameObject.SetActive(true);
-    }
 
-    // 切换按钮图标的方法
-    public void ToggleButtonImage(Image buttonImage)
-    {
-        if (isCameraOn)
+        // 初始化按钮颜色为非激活状态
+        if (cameraButton != null)
         {
-            buttonImage.sprite = cameraOnSprite;
+            cameraButton.color = inactiveColor;
         }
         else
         {
-            buttonImage.sprite = cameraOffSprite;
+            Debug.LogError("Camera button not assigned!");
+        }
+    }
+
+    // 切换按钮颜色的方法
+    public void ToggleButtonColor()
+    {
+        if (isCameraOn)
+        {
+            cameraButton.color = activeColor; // 摄像头打开时为淡蓝色
+        }
+        else
+        {
+            cameraButton.color = inactiveColor; // 摄像头关闭时为黑色
         }
     }
 
@@ -50,6 +61,9 @@ public class CameraController : MonoBehaviour
 
         // 切换状态
         isCameraOn = !isCameraOn;
+
+        // 切换按钮颜色
+        ToggleButtonColor();
     }
 
     void OpenCamera()

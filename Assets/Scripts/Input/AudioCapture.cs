@@ -13,20 +13,22 @@ public class AudioCapture : MonoBehaviour
     private float blockSize = 0.1f; // 0.1秒
     private int samplesPerBlock; // 每个块的采样点数
 
-    // UI 按钮和图片
+    // UI 按钮
     public Button recordButton;
-    public Sprite startRecordingSprite; // 开始录制图标
-    public Sprite stopRecordingSprite;  // 停止录制图标
+
+    // 按钮颜色
+    public Color activeColor = new Color(0f, 0.5f, 1f); // 淡蓝色
+    public Color inactiveColor = new Color(0f, 0f, 0f); // 黑色
 
     void Start()
     {
         // 计算每个块的采样点数
         samplesPerBlock = (int)(sampleRate * blockSize);
 
-        // 初始化按钮图标
-        if (recordButton != null && startRecordingSprite != null)
+        // 初始化按钮颜色
+        if (recordButton != null)
         {
-            recordButton.image.sprite = startRecordingSprite;
+            recordButton.image.color = inactiveColor;
         }
         else
         {
@@ -40,13 +42,13 @@ public class AudioCapture : MonoBehaviour
         {
             // 停止录制
             StopRecording();
-            recordButton.image.sprite = startRecordingSprite; // 切换为开始图标
+            recordButton.image.color = inactiveColor; // 切换为非激活颜色
         }
         else
         {
             // 开始录制
             StartRecording();
-            recordButton.image.sprite = stopRecordingSprite; // 切换为停止图标
+            recordButton.image.color = activeColor; // 切换为激活颜色
         }
     }
 

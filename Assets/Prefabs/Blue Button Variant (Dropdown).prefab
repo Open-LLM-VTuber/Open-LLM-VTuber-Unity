@@ -84,8 +84,20 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: -3794817114136193200, guid: b738480f59e63634eb4270ceae267367, type: 3}
+      propertyPath: fadeInDuration
+      value: 0.3
+      objectReference: {fileID: 0}
+    - target: {fileID: -3794817114136193200, guid: b738480f59e63634eb4270ceae267367, type: 3}
+      propertyPath: fadeOutDuration
+      value: 0.3
+      objectReference: {fileID: 0}
+    - target: {fileID: -3794817114136193200, guid: b738480f59e63634eb4270ceae267367, type: 3}
       propertyPath: maxDisplacement
       value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: -3794817114136193200, guid: b738480f59e63634eb4270ceae267367, type: 3}
+      propertyPath: releaseDuration
+      value: 0.1
       objectReference: {fileID: 0}
     - target: {fileID: 363737913044297060, guid: b738480f59e63634eb4270ceae267367, type: 3}
       propertyPath: m_Name

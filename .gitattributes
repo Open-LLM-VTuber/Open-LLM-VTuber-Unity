@@ -61,3 +61,14 @@
 #*.PDF   diff=astextplain
 #*.rtf   diff=astextplain
 #*.RTF   diff=astextplain
+
+*.unity     binary
+*.meta      binary
+*.*.meta    binary
+
+*.asset    binary
+*.anim    binary
+*.controller  binary
+
+*.prefab  binary
+*.shader  binary

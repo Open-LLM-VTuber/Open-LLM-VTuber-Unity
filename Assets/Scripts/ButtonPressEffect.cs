@@ -3,6 +3,7 @@ using UnityEngine.EventSystems;
 using DG.Tweening;
 using System;
 
+
 public class ButtonPressEffect : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 {
     public float pressScale = 0.9f; // 按钮按下时的缩放比例
@@ -21,8 +22,8 @@ public class ButtonPressEffect : MonoBehaviour, IPointerDownHandler, IPointerUpH
     public Vector3 positionOffset; // 位置偏移
 
     [Header("淡入淡出设置")]
-    public float fadeInDuration = 0.1f; // 淡入持续时间
-    public float fadeOutDuration = 0.1f; // 淡出持续时间
+    public float fadeInDuration = 0.3f; // 淡入持续时间
+    public float fadeOutDuration = 0.3f; // 淡出持续时间
 
     public Action<GameObject> OnSpawnComplete; // 实例化完成回调
 
@@ -76,16 +77,18 @@ public class ButtonPressEffect : MonoBehaviour, IPointerDownHandler, IPointerUpH
         bounceSequence.Append(transform.DOLocalMove(originalLocalPosition, releaseDuration).SetEase(Ease.OutBack)); // 恢复到原始本地位置
         bounceSequence.Join(transform.DOScale(originalScale, releaseDuration).SetEase(Ease.OutBack)); // 恢复到原始大小
 
-        if (spawnOnPress)
-        {
-            bounceSequence.OnComplete(() => SpawnTarget());
-        }
+        bounceSequence.OnComplete(() => {
+            if (spawnOnPress)
+            {
+                SpawnTarget();
+            }
 
-        if (destroyOnPress)
-        {
-            bounceSequence.OnComplete(() => DestroyTarget());
-        }
-
+            if (destroyOnPress)
+            {
+                DestroyTarget();
+            }
+        });
+    
         // 播放动画
         bounceSequence.Play();
     }
@@ -98,12 +101,21 @@ public class ButtonPressEffect : MonoBehaviour, IPointerDownHandler, IPointerUpH
             return;
         }
 
+        // 销毁自身+生成新窗口，需要将parentObject设为挂载此脚本的parentObject
+        if (destroyOnPress && spawnOnPress && targetToDestroy != null)
+        {
+            Debug.Log("销毁自身+生成新窗口，需要将parentObject设为挂载此脚本的parentObject");
+            parentObject = parentObject.parent != null ? parentObject.parent.gameObject.GetComponent<Transform>() : null;
+            Debug.Log("parentObject: " + parentObject);
+        }
+
         Debug.Log("SpawnTarget");
         // 实例化预制体
         GameObject instance = Instantiate(targetToSpawn, parentObject);
         // 设置位置
         instance.transform.localPosition = positionOffset;
-
+        // 实例化后可回调，设置基本信息
+        OnSpawnComplete?.Invoke(instance);
         // 添加淡入效果
         FadeIn(instance);
 
@@ -123,7 +135,7 @@ public class ButtonPressEffect : MonoBehaviour, IPointerDownHandler, IPointerUpH
         canvasGroup.alpha = 0f;
 
         // 使用DOTween进行淡入, 播放完动画后触发回调
-        canvasGroup.DOFade(1f, fadeInDuration).SetEase(Ease.InQuad).OnComplete(() => OnSpawnComplete?.Invoke(target));
+        canvasGroup.DOFade(1f, fadeInDuration).SetEase(Ease.InQuad);
     }
 
     // 淡出效果

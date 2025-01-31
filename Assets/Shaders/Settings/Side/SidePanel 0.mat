@@ -76,7 +76,7 @@ Material:
     - _Radius: 0.1
     - _RadiusMaxSmooth: 0.101
     - _RadiusMinSmooth: 0.099
-    - _Ratio: 1.25
+    - _Ratio: 1.5
     - _Smoothness: 0.01
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1

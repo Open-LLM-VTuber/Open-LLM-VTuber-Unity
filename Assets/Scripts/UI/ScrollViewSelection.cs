@@ -63,23 +63,19 @@ public class ScrollViewSelection : MonoBehaviour
     // 设置单选
     public void SetSingleSelect(int index)
     {
-        if (singleSelectedIndex != -1)
-        {
-            // 取消之前的选择
-            buttonPool[singleSelectedIndex].image.color = normalColor;
-        }
 
-        if (singleSelectedIndex == index)
+        if (singleSelectedIndex != index)
         {
-            // 取消选择
-            singleSelectedIndex = -1;
-        }
-        else
-        {
+            if (singleSelectedIndex != -1)
+            {
+                // 取消之前的选择
+                buttonPool[singleSelectedIndex].image.color = normalColor;
+            }
             // 选择新项
             singleSelectedIndex = index;
             buttonPool[index].image.color = selectedColor;
         }
+        
     }
 
     // 切换多选

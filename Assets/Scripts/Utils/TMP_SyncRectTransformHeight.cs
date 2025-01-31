@@ -1,28 +1,33 @@
-using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class TMP_SyncRectTransformHeight : MonoBehaviour
 {
-    // Start is called before the first frame update
     public TMP_InputField inputField; // 输入框组件
-    public RectTransform targetRectTransform; // 需要同步高度的组件
+    public RectTransform[] targetRectTransforms; // 需要同步高度的目标组件数组
+    public Scrollbar scrollbar; // 滚动条组件
     public float maxHeight = 200f;
 
     private float initialHeight = 72f; // 初始高度
-    private float varHeight = 72f; // 变化的高度
+    private float currentHeight = 72f; // 当前高度
 
     void Start()
     {
-        if (inputField == null || targetRectTransform == null)
+        if (inputField == null || targetRectTransforms == null)
         {
-            Debug.LogError("InputField or Target RectTransform is not assigned!");
+            Debug.LogError("InputField or Target RectTransforms are not assigned!");
+            return;
+        }
+
+        if (scrollbar == null)
+        {
+            Debug.LogError("Scrollbar is not assigned!");
             return;
         }
 
         // 记录初始高度
-        varHeight = initialHeight = inputField.GetComponent<RectTransform>().rect.height;
+        currentHeight = initialHeight = inputField.GetComponent<RectTransform>().rect.height;
 
         // 监听输入框的文本变化事件
         inputField.onValueChanged.AddListener(OnInputFieldValueChanged);
@@ -31,19 +36,35 @@ public class TMP_SyncRectTransformHeight : MonoBehaviour
     void OnInputFieldValueChanged(string text)
     {
         // 获取输入框的当前高度
-        float currentHeight = Mathf.Clamp(inputField.textComponent.preferredHeight, initialHeight, maxHeight);
-        
+        float targetHeight = Mathf.Clamp(inputField.textComponent.preferredHeight, initialHeight, maxHeight);
+
         // 计算高度变化量
-        float heightChange = currentHeight - varHeight;
-        //Debug.Log("heightChange: " + heightChange);
-        // 同步高度变化量到目标组件
-        targetRectTransform.SetSizeWithCurrentAnchors(
-            RectTransform.Axis.Vertical,
-            targetRectTransform.rect.height + heightChange
-        );
+        float heightChange = targetHeight - currentHeight;
 
-        // 更新初始高度
-        varHeight = currentHeight;
+        // 记录滚动条的原始 value
+        float storedScrollbarValue = scrollbar.value;
+
+        // 同步高度变化量到所有目标组件
+        foreach (RectTransform rectTransform in targetRectTransforms)
+        {
+            // 确保目标组件不为空
+            if (rectTransform == null)
+            {
+                Debug.LogWarning("One of the Target RectTransforms is missing!");
+                continue;
+            }
+
+            // 设置新高度
+            rectTransform.SetSizeWithCurrentAnchors(
+                RectTransform.Axis.Vertical,
+                rectTransform.rect.height + heightChange
+            );
+        }
+
+        // 更新当前高度
+        currentHeight = targetHeight;
+
+        // 恢复滚动条的原始 value
+        scrollbar.value = storedScrollbarValue;
     }
-
 }
