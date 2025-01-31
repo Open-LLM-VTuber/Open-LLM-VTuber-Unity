@@ -764,7 +764,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 542, y: -65}
-  m_SizeDelta: {x: 0, y: 100}
+  m_SizeDelta: {x: 1004, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &8525014277417151683
 MonoBehaviour:
@@ -818,10 +818,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 50dca085974e3a9419f065940c69b88b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inputField: {fileID: 0}
-  button: {fileID: 0}
-  disabledColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  enabledColor: {r: 1, g: 1, b: 1, a: 1}
+  inputField: {fileID: 6905915431945925356}
+  button: {fileID: 9166321840023002888}
 --- !u!1 &2971581959990850442
 GameObject:
   m_ObjectHideFlags: 0
@@ -1109,7 +1107,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 527.5, y: -180}
-  m_SizeDelta: {x: 0, y: 70}
+  m_SizeDelta: {x: 975, y: 70}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2144510088648278446
 MonoBehaviour:
