@@ -1,134 +1,163 @@
-using UnityEngine;
-using UnityEngine.UI;
-using WebSocketSharp;
+//using System;
+//using WebSocketSharp;
+//using UnityEngine;
+//using UnityEngine.UI;
+//using TMPro;
+//using Newtonsoft.Json;
 
-public class WebSocketClient : MonoBehaviour
-{
-    private WebSocket ws;
+//public class WebSocketClient : MonoBehaviour
+//{
+//    private WebSocket ws;
+//    public TMP_InputField inputField; // 用户输入的文本框（使用 TMP_InputField）
+//    public TMP_Text displayText; // 显示对话内容（使用 TMP_Text）
+//    private string serverUrl; // 替换为你的 WebSocket 服务地址
 
-    // UI元素
-    public InputField serverAddressInput; // 用于输入服务器地址
-    public Button connectButton; // 连接按钮
-    public Text statusText; // 显示连接状态
+//    void Start()
+//    {
+//        serverUrl = SettingsManager.Instance.GetSetting("WebSocketUrl");
+//        ws = new WebSocket(serverUrl);
+//        ws.OnOpen += OnOpen;
+//        ws.OnMessage += OnMessage;
+//        ws.OnError += OnError;
+//        ws.OnClose += OnClose;
+//        ws.Connect();
+//    }
 
-    void Start()
-    {
-        // 绑定连接按钮的点击事件
-        connectButton.onClick.AddListener(ConnectToServer);
-    }
+//    private void OnOpen(object sender, EventArgs e)
+//    {
+//        Debug.Log("WebSocket Connection Established");
+//        // 发送初始化消息
+//        SendWebSocketMessage(new { type = "fetch-history-list" });
+//    }
 
-    void ConnectToServer()
-    {
-        // 获取用户输入的服务器地址
-        string serverAddress = serverAddressInput.text;
+//    private void OnMessage(object sender, MessageEventArgs e)
+//    {
+//        Debug.Log("Received: " + e.Data);
 
-        if (string.IsNullOrEmpty(serverAddress))
-        {
-            statusText.text = "Please enter a server address!";
-            return;
-        }
+//        try
+//        {
+//            dynamic message = JsonConvert.DeserializeObject(e.Data);
+//            string type = message.type;
 
-        // 连接到WebSocket服务器
-        ws = new WebSocket(serverAddress);
+//            switch (type)
+//            {
+//                case "full-text":
+//                    HandleFullTextMessage(message.text);
+//                    break;
+//                case "history-list":
+//                    HandleHistoryListMessage((string[])message.histories);
+//                    break;
+//                case "history-data":
+//                    HandleHistoryDataMessage((string[])message.messages);
+//                    break;
+//                case "new-history-created":
+//                    HandleNewHistoryCreatedMessage(message.history_uid);
+//                    break;
+//                case "history-deleted":
+//                    HandleHistoryDeletedMessage(message.success, message.history_uid);
+//                    break;
+//                case "control":
+//                    HandleControlMessage(message.text);
+//                    break;
+//                case "set-model-and-conf":
+//                    HandleSetModelAndConfMessage(message.model_info, message.conf_name, message.conf_uid);
+//                    break;
+//                case "config-files":
+//                    HandleConfigFilesMessage((string[])message.configs);
+//                    break;
+//                case "background-files":
+//                    HandleBackgroundFilesMessage((string[])message.files);
+//                    break;
+//                default:
+//                    Debug.LogWarning("Unknown message type received: " + type);
+//                    break;
+//            }
+//        }
+//        catch (Exception ex)
+//        {
+//            Debug.LogError("Error parsing WebSocket message: " + ex.Message);
+//        }
+//    }
 
-        // 设置事件处理程序
-        ws.OnOpen += OnOpen;
-        ws.OnMessage += OnMessage;
-        ws.OnError += OnError;
-        ws.OnClose += OnClose;
+//    private void HandleFullTextMessage(string text)
+//    {
+//        displayText.text += "\nAI: " + text;
+//        Debug.Log("Full Text: " + text);
+//    }
 
-        // 连接
-        ws.Connect();
-    }
+//    private void HandleHistoryListMessage(string[] histories)
+//    {
+//        Debug.Log("History List: " + string.Join(", ", histories));
+//        // 处理历史记录列表
+//    }
 
-    void OnOpen(object sender, System.EventArgs e)
-    {
-        Debug.Log("WebSocket connected!");
-        statusText.text = "Connected to server!";
+//    private void HandleHistoryDataMessage(string[] messages)
+//    {
+//        Debug.Log("History Data: " + string.Join(", ", messages));
+//        // 处理历史记录数据
+//    }
 
-        // 发送初始消息
-        ws.Send("{\"type\": \"fetch-conf-info\"}");
-    }
+//    private void HandleNewHistoryCreatedMessage(string historyUid)
+//    {
+//        Debug.Log("New History Created: " + historyUid);
+//        // 处理新创建的历史记录
+//    }
 
-    void OnMessage(object sender, MessageEventArgs e)
-    {
-        Debug.Log("Message received from server: " + e.Data);
-        statusText.text = "Message received: " + e.Data;
+//    private void HandleHistoryDeletedMessage(bool success, string historyUid)
+//    {
+//        Debug.Log("History Deleted: " + historyUid + " (Success: " + success + ")");
+//        // 处理删除历史记录
+//    }
 
-        // 处理服务器响应
-        HandleServerResponse(e.Data);
-    }
+//    private void HandleControlMessage(string text)
+//    {
+//        Debug.Log("Control Signal: " + text);
+//        // 处理控制信号
+//    }
 
-    void OnError(object sender, ErrorEventArgs e)
-    {
-        Debug.LogError("WebSocket error: " + e.Message);
-        statusText.text = "Error: " + e.Message;
-    }
+//    private void HandleSetModelAndConfMessage(string modelInfo, string confName, string confUid)
+//    {
+//        Debug.Log("Model Info: " + modelInfo + ", Conf Name: " + confName + ", Conf UID: " + confUid);
+//        // 处理模型和配置信息
+//    }
 
-    void OnClose(object sender, CloseEventArgs e)
-    {
-        Debug.Log("WebSocket closed: " + e.Reason);
-        statusText.text = "Connection closed: " + e.Reason;
-    }
+//    private void HandleConfigFilesMessage(string[] configFiles)
+//    {
+//        Debug.Log("Config Files: " + string.Join(", ", configFiles));
+//        // 处理配置文件列表
+//    }
 
-    void HandleServerResponse(string response)
-    {
-        // 解析JSON响应
-        var jsonResponse = JsonUtility.FromJson<ServerResponse>(response);
+//    private void HandleBackgroundFilesMessage(string[] backgroundFiles)
+//    {
+//        Debug.Log("Background Files: " + string.Join(", ", backgroundFiles));
+//        // 处理背景文件列表
+//    }
 
-        // 根据响应类型处理
-        switch (jsonResponse.type)
-        {
-            case "config-info":
-                Debug.Log("Config Info: " + jsonResponse.conf_name + ", " + jsonResponse.conf_uid);
-                break;
-            case "history-list":
-                Debug.Log("History List: " + jsonResponse.histories);
-                break;
-            case "history-data":
-                Debug.Log("History Data: " + jsonResponse.messages);
-                break;
-            case "new-history-created":
-                Debug.Log("New History Created: " + jsonResponse.history_uid);
-                break;
-            case "history-deleted":
-                Debug.Log("History Deleted: " + jsonResponse.history_uid);
-                break;
-            case "full-text":
-                Debug.Log("Full Text: " + jsonResponse.text);
-                break;
-            case "set-model":
-                Debug.Log("Model Info: " + jsonResponse.model_info);
-                break;
-            case "control":
-                Debug.Log("Control: " + jsonResponse.text);
-                break;
-            default:
-                Debug.Log("Unknown response type: " + jsonResponse.type);
-                break;
-        }
-    }
+//    private void OnError(object sender, ErrorEventArgs e)
+//    {
+//        Debug.LogError("WebSocket Error: " + e.Message);
+//    }
 
-    void OnDestroy()
-    {
-        if (ws != null)
-        {
-            ws.Close();
-            ws = null;
-        }
-    }
+//    private void OnClose(object sender, CloseEventArgs e)
+//    {
+//        Debug.Log("WebSocket Connection Closed");
+//    }
 
-    // 用于解析JSON响应的类
-    [System.Serializable]
-    private class ServerResponse
-    {
-        public string type;
-        public string conf_name;
-        public string conf_uid;
-        public string[] histories;
-        public string[] messages;
-        public string history_uid;
-        public string text;
-        public string model_info;
-    }
-}
+//    public void SendWebSocketMessage(object message)
+//    {
+//        string jsonMessage = JsonConvert.SerializeObject(message);
+//        ws.Send(jsonMessage);
+//        Debug.Log("Sent: " + jsonMessage);
+//    }
+
+//    public void OnSendButtonClicked()
+//    {
+//        SendWebSocketMessage(new { type = "text-input", text = inputField.text });
+//        inputField.text = ""; // 清空输入框
+//    }
+
+//    void OnDestroy()
+//    {
+//        ws.Close();
+//    }
+//}
