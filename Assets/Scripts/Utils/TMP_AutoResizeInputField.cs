@@ -79,7 +79,7 @@ public class TMP_AutoResizeInputField : MonoBehaviour
             scrollbar.size = viewportHeight / contentHeight;
 
             // 设置 Scrollbar 的 value（滑块位置）
-            scrollbar.value = 0.5f; // 默认滚动到底部
+            scrollbar.value = 1f; // 默认滚动到底部
         }
         else
         {
