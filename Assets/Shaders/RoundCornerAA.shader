@@ -17,6 +17,8 @@ Shader "Unlit/RoundCornerAA"
 
         _ColorMask ("Color Mask", Float) = 15 // 默认写入所有颜色通道（RGBA）
 
+        [Toggle(_UseUIAlphaClip)]
+        _UseUIAlphaClip ("Use Alpha Clip", Float) = 0
     }
     SubShader
     {
@@ -31,7 +33,12 @@ Shader "Unlit/RoundCornerAA"
             WriteMask [_StencilWriteMask]
         }
 
+        ZWrite Off
+        ZTest Less 
+        Cull Off
         Blend SrcAlpha OneMinusSrcAlpha
+        ColorMask RGB
+
         Pass
         {
             CGPROGRAM
@@ -64,6 +71,7 @@ Shader "Unlit/RoundCornerAA"
             float _RadiusMinSmooth;
             float _RadiusMaxSmooth;
             float _ColorMask;
+            float _UseUIAlphaClip;
 
             v2f vert (appdata v)
             {
@@ -89,13 +97,19 @@ Shader "Unlit/RoundCornerAA"
 
                 fixed4 col = tex2D(_MainTex, i.uv) * i.color;
                 col.a *= alpha; // 应用透明度
-
+                // 如果采用透明度裁剪
+                if (_UseUIAlphaClip > 0)
+                {
+                    if (col.a < 0.05) // 近乎透明时丢弃
+                        discard;
+                }
                 UNITY_APPLY_FOG(i.fogCoord, col);
                 return col;
             }
             ENDCG
         }
     }
+
 
     CustomEditor "MyShaderInspector"
 }
