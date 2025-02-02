@@ -5,21 +5,29 @@ using UnityEngine;
 
 public class UnityMainThreadDispatcher : MonoBehaviour
 {
-    private static UnityMainThreadDispatcher instance;
+    private readonly object lockObject = new object();
     private readonly Queue<Action> actions = new Queue<Action>();
 
-    public static UnityMainThreadDispatcher Instance()
+    // 使用 Start 而不是 Awake 避免不必要的初始化
+    public static UnityMainThreadDispatcher Instance { get; private set; }
+
+    private void Awake()
     {
-        if (instance == null)
+        // 单例初始化
+        if (Instance == null)
         {
-            instance = new GameObject("MainThreadDispatcher").AddComponent<UnityMainThreadDispatcher>();
+            Instance = this;
+            DontDestroyOnLoad(gameObject); // 确保场景切换时不被销毁
         }
-        return instance;
+        else
+        {
+            Destroy(gameObject); // 如果已存在实例，销毁新的实例
+        }
     }
 
-    void Update()
+    private void Update()
     {
-        lock (actions)
+        lock (lockObject)
         {
             while (actions.Count > 0)
             {
@@ -30,7 +38,12 @@ public class UnityMainThreadDispatcher : MonoBehaviour
 
     public void Enqueue(Action action)
     {
-        lock (actions)
+        if (action == null)
+        {
+            throw new ArgumentNullException(nameof(action), "Action cannot be null.");
+        }
+
+        lock (lockObject)
         {
             actions.Enqueue(action);
         }
