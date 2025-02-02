@@ -1,163 +1,274 @@
-//using System;
-//using WebSocketSharp;
-//using UnityEngine;
-//using UnityEngine.UI;
-//using TMPro;
-//using Newtonsoft.Json;
+using System;
+using WebSocketSharp;
+using UnityEngine;
+using TMPro;
+using Newtonsoft.Json;
+using System.Collections.Generic;
 
-//public class WebSocketClient : MonoBehaviour
-//{
-//    private WebSocket ws;
-//    public TMP_InputField inputField; // 用户输入的文本框（使用 TMP_InputField）
-//    public TMP_Text displayText; // 显示对话内容（使用 TMP_Text）
-//    private string serverUrl; // 替换为你的 WebSocket 服务地址
+public class WebSocketClient : MonoBehaviour
+{
+    // region 自定义数据结构
+    [Serializable]
+    public class WebSocketMessage
+    {
+        public string type;
+    }
 
-//    void Start()
-//    {
-//        serverUrl = SettingsManager.Instance.GetSetting("WebSocketUrl");
-//        ws = new WebSocket(serverUrl);
-//        ws.OnOpen += OnOpen;
-//        ws.OnMessage += OnMessage;
-//        ws.OnError += OnError;
-//        ws.OnClose += OnClose;
-//        ws.Connect();
-//    }
+    [Serializable]
+    public class TextMessage : WebSocketMessage
+    {
+        public string text;
+    }
 
-//    private void OnOpen(object sender, EventArgs e)
-//    {
-//        Debug.Log("WebSocket Connection Established");
-//        // 发送初始化消息
-//        SendWebSocketMessage(new { type = "fetch-history-list" });
-//    }
+    [Serializable]
+    public class HistoryListMessage : WebSocketMessage
+    {
+        public string[] histories;
+    }
 
-//    private void OnMessage(object sender, MessageEventArgs e)
-//    {
-//        Debug.Log("Received: " + e.Data);
+    [Serializable]
+    public class HistoryDataMessage : WebSocketMessage
+    {
+        public string[] messages;
+    }
 
-//        try
-//        {
-//            dynamic message = JsonConvert.DeserializeObject(e.Data);
-//            string type = message.type;
+    [Serializable]
+    public class HistoryCreatedMessage : WebSocketMessage
+    {
+        public string history_uid;
+    }
 
-//            switch (type)
-//            {
-//                case "full-text":
-//                    HandleFullTextMessage(message.text);
-//                    break;
-//                case "history-list":
-//                    HandleHistoryListMessage((string[])message.histories);
-//                    break;
-//                case "history-data":
-//                    HandleHistoryDataMessage((string[])message.messages);
-//                    break;
-//                case "new-history-created":
-//                    HandleNewHistoryCreatedMessage(message.history_uid);
-//                    break;
-//                case "history-deleted":
-//                    HandleHistoryDeletedMessage(message.success, message.history_uid);
-//                    break;
-//                case "control":
-//                    HandleControlMessage(message.text);
-//                    break;
-//                case "set-model-and-conf":
-//                    HandleSetModelAndConfMessage(message.model_info, message.conf_name, message.conf_uid);
-//                    break;
-//                case "config-files":
-//                    HandleConfigFilesMessage((string[])message.configs);
-//                    break;
-//                case "background-files":
-//                    HandleBackgroundFilesMessage((string[])message.files);
-//                    break;
-//                default:
-//                    Debug.LogWarning("Unknown message type received: " + type);
-//                    break;
-//            }
-//        }
-//        catch (Exception ex)
-//        {
-//            Debug.LogError("Error parsing WebSocket message: " + ex.Message);
-//        }
-//    }
+    [Serializable]
+    public class HistoryDeletedMessage : WebSocketMessage
+    {
+        public bool success;
+        public string history_uid;
+    }
 
-//    private void HandleFullTextMessage(string text)
-//    {
-//        displayText.text += "\nAI: " + text;
-//        Debug.Log("Full Text: " + text);
-//    }
+    [Serializable]
+    public class ModelConfigMessage : WebSocketMessage
+    {
+        public string model_info;
+        public string conf_name;
+        public string conf_uid;
+    }
 
-//    private void HandleHistoryListMessage(string[] histories)
-//    {
-//        Debug.Log("History List: " + string.Join(", ", histories));
-//        // 处理历史记录列表
-//    }
+    [Serializable]
+    public class ConfigFilesMessage : WebSocketMessage
+    {
+        public string[] configs;
+    }
 
-//    private void HandleHistoryDataMessage(string[] messages)
-//    {
-//        Debug.Log("History Data: " + string.Join(", ", messages));
-//        // 处理历史记录数据
-//    }
+    [Serializable]
+    public class BackgroundFilesMessage : WebSocketMessage
+    {
+        public string[] files;
+    }
+    // endregion
 
-//    private void HandleNewHistoryCreatedMessage(string historyUid)
-//    {
-//        Debug.Log("New History Created: " + historyUid);
-//        // 处理新创建的历史记录
-//    }
+    private WebSocket ws;
+    public TMP_InputField inputField;
+    public TMP_Text displayText;
+    private string serverUrl;
 
-//    private void HandleHistoryDeletedMessage(bool success, string historyUid)
-//    {
-//        Debug.Log("History Deleted: " + historyUid + " (Success: " + success + ")");
-//        // 处理删除历史记录
-//    }
+    void Start()
+    {
+        serverUrl = SettingsManager.Instance.GetSetting("WebSocketUrl");
+        InitializeWebSocket();
+    }
 
-//    private void HandleControlMessage(string text)
-//    {
-//        Debug.Log("Control Signal: " + text);
-//        // 处理控制信号
-//    }
+    private void InitializeWebSocket()
+    {
+        ws = new WebSocket(serverUrl);
 
-//    private void HandleSetModelAndConfMessage(string modelInfo, string confName, string confUid)
-//    {
-//        Debug.Log("Model Info: " + modelInfo + ", Conf Name: " + confName + ", Conf UID: " + confUid);
-//        // 处理模型和配置信息
-//    }
+        // 处理SSL证书验证（测试环境使用）
+        ws.SslConfiguration.ServerCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
 
-//    private void HandleConfigFilesMessage(string[] configFiles)
-//    {
-//        Debug.Log("Config Files: " + string.Join(", ", configFiles));
-//        // 处理配置文件列表
-//    }
+        ws.OnOpen += (sender, e) => {
+            Debug.Log("Connected to WebSocket");
+            SendWebSocketMessage(new WebSocketMessage { type = "fetch-history-list" });
+        };
 
-//    private void HandleBackgroundFilesMessage(string[] backgroundFiles)
-//    {
-//        Debug.Log("Background Files: " + string.Join(", ", backgroundFiles));
-//        // 处理背景文件列表
-//    }
+        ws.OnMessage += (sender, e) => {
+            Debug.Log($"Raw message: {e.Data}");
+            HandleReceivedMessage(e.Data);
+        };
 
-//    private void OnError(object sender, ErrorEventArgs e)
-//    {
-//        Debug.LogError("WebSocket Error: " + e.Message);
-//    }
+        ws.OnError += (sender, e) => {
+            Debug.LogError($"WebSocket error: {e.Message}");
+        };
 
-//    private void OnClose(object sender, CloseEventArgs e)
-//    {
-//        Debug.Log("WebSocket Connection Closed");
-//    }
+        ws.OnClose += (sender, e) => {
+            Debug.Log($"Connection closed: {e.Reason}");
+        };
 
-//    public void SendWebSocketMessage(object message)
-//    {
-//        string jsonMessage = JsonConvert.SerializeObject(message);
-//        ws.Send(jsonMessage);
-//        Debug.Log("Sent: " + jsonMessage);
-//    }
+        ws.Connect();
+    }
 
-//    public void OnSendButtonClicked()
-//    {
-//        SendWebSocketMessage(new { type = "text-input", text = inputField.text });
-//        inputField.text = ""; // 清空输入框
-//    }
+    private void HandleReceivedMessage(string json)
+    {
+        try
+        {
+            // 第一步：解析基础消息类型
+            var baseMessage = JsonConvert.DeserializeObject<WebSocketMessage>(json);
 
-//    void OnDestroy()
-//    {
-//        ws.Close();
-//    }
-//}
+            // 第二步：根据类型进行完整解析
+            switch (baseMessage.type)
+            {
+                case "full-text":
+                    var textMsg = JsonConvert.DeserializeObject<TextMessage>(json);
+                    UnityMainThreadDispatcher.Instance().Enqueue(() =>
+                        HandleFullTextMessage(textMsg));
+                    break;
+
+                case "history-list":
+                    var historyListMsg = JsonConvert.DeserializeObject<HistoryListMessage>(json);
+                    UnityMainThreadDispatcher.Instance().Enqueue(() =>
+                        HandleHistoryListMessage(historyListMsg));
+                    break;
+
+                case "history-data":
+                    var historyDataMsg = JsonConvert.DeserializeObject<HistoryDataMessage>(json);
+                    UnityMainThreadDispatcher.Instance().Enqueue(() =>
+                        HandleHistoryDataMessage(historyDataMsg));
+                    break;
+
+                case "new-history-created":
+                    var historyCreatedMsg = JsonConvert.DeserializeObject<HistoryCreatedMessage>(json);
+                    UnityMainThreadDispatcher.Instance().Enqueue(() =>
+                        HandleNewHistoryCreatedMessage(historyCreatedMsg));
+                    break;
+
+                case "history-deleted":
+                    var historyDeletedMsg = JsonConvert.DeserializeObject<HistoryDeletedMessage>(json);
+                    UnityMainThreadDispatcher.Instance().Enqueue(() =>
+                        HandleHistoryDeletedMessage(historyDeletedMsg));
+                    break;
+
+                case "set-model-and-conf":
+                    var modelConfigMsg = JsonConvert.DeserializeObject<ModelConfigMessage>(json);
+                    UnityMainThreadDispatcher.Instance().Enqueue(() =>
+                        HandleSetModelAndConfMessage(modelConfigMsg));
+                    break;
+
+                case "config-files":
+                    var configFilesMsg = JsonConvert.DeserializeObject<ConfigFilesMessage>(json);
+                    UnityMainThreadDispatcher.Instance().Enqueue(() =>
+                        HandleConfigFilesMessage(configFilesMsg));
+                    break;
+
+                case "background-files":
+                    var bgFilesMsg = JsonConvert.DeserializeObject<BackgroundFilesMessage>(json);
+                    UnityMainThreadDispatcher.Instance().Enqueue(() =>
+                        HandleBackgroundFilesMessage(bgFilesMsg));
+                    break;
+
+                default:
+                    Debug.LogWarning($"Unknown message type: {baseMessage.type}");
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"Message parsing failed: {ex.Message}\n{ex.StackTrace}");
+        }
+    }
+
+    // region 消息处理方法
+    private void HandleFullTextMessage(TextMessage msg)
+    {
+        displayText.text += $"\nAI: {msg.text}";
+        ScrollToBottom(); // 假设有自动滚动到底部的方法
+    }
+
+    private void HandleHistoryListMessage(HistoryListMessage msg)
+    {
+        Debug.Log($"Received {msg.histories.Length} history items");
+        // 更新历史记录列表UI
+    }
+
+    private void HandleHistoryDataMessage(HistoryDataMessage msg)
+    {
+        Debug.Log($"Received {msg.messages.Length} history messages");
+        // 加载历史消息到对话界面
+    }
+
+    private void HandleNewHistoryCreatedMessage(HistoryCreatedMessage msg)
+    {
+        Debug.Log($"New history created: {msg.history_uid}");
+        // 刷新历史记录列表
+    }
+
+    private void HandleHistoryDeletedMessage(HistoryDeletedMessage msg)
+    {
+        Debug.Log($"History delete status: {msg.success}, UID: {msg.history_uid}");
+        // 更新UI状态
+    }
+
+    private void HandleSetModelAndConfMessage(ModelConfigMessage msg)
+    {
+        Debug.Log($"Model config updated: {msg.model_info}, {msg.conf_name}");
+        // 更新模型配置显示
+    }
+
+    private void HandleConfigFilesMessage(ConfigFilesMessage msg)
+    {
+        Debug.Log($"Available configs: {string.Join(", ", msg.configs)}");
+        // 更新配置下拉菜单
+    }
+
+    private void HandleBackgroundFilesMessage(BackgroundFilesMessage msg)
+    {
+        Debug.Log($"Background files: {string.Join(", ", msg.files)}");
+        // 更新背景选择面板
+    }
+    // endregion
+
+    public void SendWebSocketMessage(WebSocketMessage message)
+    {
+        if (ws?.IsAlive != true)
+        {
+            Debug.LogWarning("Cannot send message - WebSocket not connected");
+            return;
+        }
+
+        try
+        {
+            string json = JsonConvert.SerializeObject(message);
+            ws.Send(json);
+            Debug.Log($"Sent message: {json}");
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"Send failed: {ex.Message}");
+        }
+    }
+
+    public void OnSendButtonClicked()
+    {
+        if (!string.IsNullOrEmpty(inputField.text))
+        {
+            SendWebSocketMessage(new TextMessage
+            {
+                type = "text-input",
+                text = inputField.text
+            });
+            inputField.text = "";
+        }
+    }
+
+    void OnDestroy()
+    {
+        if (ws != null)
+        {
+            if (ws.IsAlive) ws.Close();
+            ws = null;
+        }
+    }
+
+    // 其他辅助方法
+    private void ScrollToBottom()
+    {
+        // 实现滚动视图自动到底部逻辑
+    }
+}
