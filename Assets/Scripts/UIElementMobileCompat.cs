@@ -43,15 +43,12 @@ public class UIElementMobileCompat : MonoBehaviour
                 else
                 {
                     rt.sizeDelta = new Vector2(worldScreenWidth, rt.sizeDelta.y);
-
                 }
-
                 if (uiElement.name == "ChatPanel" || uiElement.name == "SettingsTopPanel" ||uiElement.name =="TopPanel" || uiElement.name == "UICanvas")
                 {
                     //位置居中
                     rt.localPosition = new Vector3(0, rt.localPosition.y, rt.localPosition.z);
                 }
-                
                 //Debug.Log($"Updated {uiElement.name}: Width = {worldScreenWidth}, PosX = {rt.localPosition.x}");
             }
             else
