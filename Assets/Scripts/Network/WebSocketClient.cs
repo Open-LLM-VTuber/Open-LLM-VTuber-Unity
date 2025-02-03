@@ -7,8 +7,7 @@ using System.Collections.Generic;
 
 public class WebSocketClient : MonoBehaviour
 {
-
-#region 自定义数据结构
+    #region 自定义数据结构
     [Serializable]
     public class WebSocketMessage
     {
@@ -22,26 +21,29 @@ public class WebSocketClient : MonoBehaviour
     }
 
     [Serializable]
+    public class AudioMessage : WebSocketMessage
+    {
+        public string audio; // base64 编码的音频数据
+        public float[] volumes; // 音量数据
+        public int slice_length; // 音频切片长度（毫秒）
+        public string text; // 显示的文本
+        public Dictionary<string, List<string>> actions; // 动作配置
+    }
+
+    [Serializable]
     public class HistoryListMessage : WebSocketMessage
     {
-        // 历史记录列表
         public List<HistoryItem> histories;
     }
 
     [Serializable]
     public class HistoryItem
     {
-        // 历史记录唯一标识
         public string uid;
-
-        // 最新消息内容
         public string latestMessage;
-
-        // 时间戳
         [JsonProperty("timestamp")]
-        public DateTime? timestamp; // 可能为 null
+        public DateTime? timestamp;
     }
-
 
     [Serializable]
     public class HistoryDataMessage : WebSocketMessage
@@ -65,47 +67,23 @@ public class WebSocketClient : MonoBehaviour
     [Serializable]
     public class ModelConfigMessage : WebSocketMessage
     {
-        // 模型信息
         public ModelInfo model_info;
-
-        // 配置名称
         public string conf_name;
-
-        // 配置唯一标识
         public string conf_uid;
     }
 
     [Serializable]
     public class ModelInfo
     {
-        // 模型名称
         public string name;
-
-        // 模型描述
         public string description;
-
-        // 模型 URL
         public string url;
-
-        // 缩放比例
         public float kScale;
-
-        // 初始 X 偏移
         public int initialXshift;
-
-        // 初始 Y 偏移
         public int initialYshift;
-
-        // X 偏移常量
         public int kXOffset;
-
-        // 空闲动作组名称
         public string idleMotionGroupName;
-
-        // 情绪映射
         public Dictionary<string, int> emotionMap;
-
-        // 点击动作配置
         public Dictionary<string, Dictionary<string, int>> tapMotions;
     }
 
@@ -120,7 +98,6 @@ public class WebSocketClient : MonoBehaviour
     {
         public string[] files;
     }
-    // endregion
     #endregion
 
     private WebSocket ws;
@@ -137,7 +114,6 @@ public class WebSocketClient : MonoBehaviour
 
     private void InitializeDispatcher()
     {
-        // 保证先初始化主线程调度器
         UnityMainThreadDispatcher.Instance.Enqueue(() => { });
     }
 
@@ -145,24 +121,26 @@ public class WebSocketClient : MonoBehaviour
     {
         ws = new WebSocket(serverUrl);
 
-        // 处理SSL证书验证（测试环境使用）
-        // ws.SslConfiguration.ServerCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
-
-        ws.OnOpen += (sender, e) => {
+        ws.OnOpen += (sender, e) =>
+        {
             Debug.Log("Connected to WebSocket");
             SendWebSocketMessage(new WebSocketMessage { type = "fetch-history-list" });
+            SendWebSocketMessage(new WebSocketMessage { type = "create-new-history" });
         };
 
-        ws.OnMessage += (sender, e) => {
+        ws.OnMessage += (sender, e) =>
+        {
             Debug.Log($"Raw message: {e.Data}");
             HandleReceivedMessage(e.Data);
         };
 
-        ws.OnError += (sender, e) => {
+        ws.OnError += (sender, e) =>
+        {
             Debug.LogError($"WebSocket error: {e.Message}");
         };
 
-        ws.OnClose += (sender, e) => {
+        ws.OnClose += (sender, e) =>
+        {
             Debug.Log($"Connection closed: {e.Reason}");
         };
 
@@ -173,63 +151,30 @@ public class WebSocketClient : MonoBehaviour
     {
         try
         {
-            // 第一步：解析基础消息类型
             var baseMessage = JsonConvert.DeserializeObject<WebSocketMessage>(json);
 
-            // 第二步：根据类型进行完整解析
-            switch (baseMessage.type)
+            // 使用字典映射消息类型到对应的处理逻辑
+            var messageHandlers = new Dictionary<string, Action<string>>
             {
-                case "full-text":
-                    var textMsg = JsonConvert.DeserializeObject<TextMessage>(json);
-                    UnityMainThreadDispatcher.Instance.Enqueue(() =>
-                        HandleFullTextMessage(textMsg));
-                    break;
+                { "full-text", HandleMessage<TextMessage>(HandleFullTextMessage) },
+                { "control", HandleMessage<TextMessage>(HandleFullTextMessage) },
+                { "audio", HandleMessage<AudioMessage>(HandleAudioMessage) },
+                { "history-list", HandleMessage<HistoryListMessage>(HandleHistoryListMessage) },
+                { "history-data", HandleMessage<HistoryDataMessage>(HandleHistoryDataMessage) },
+                { "new-history-created", HandleMessage<HistoryCreatedMessage>(HandleNewHistoryCreatedMessage) },
+                { "history-deleted", HandleMessage<HistoryDeletedMessage>(HandleHistoryDeletedMessage) },
+                { "set-model-and-conf", HandleMessage<ModelConfigMessage>(HandleSetModelAndConfMessage) },
+                { "config-files", HandleMessage<ConfigFilesMessage>(HandleConfigFilesMessage) },
+                { "background-files", HandleMessage<BackgroundFilesMessage>(HandleBackgroundFilesMessage) }
+            };
 
-                case "history-list":
-                    var historyListMsg = JsonConvert.DeserializeObject<HistoryListMessage>(json);
-                    UnityMainThreadDispatcher.Instance.Enqueue(() =>
-                        HandleHistoryListMessage(historyListMsg));
-                    break;
-
-                case "history-data":
-                    var historyDataMsg = JsonConvert.DeserializeObject<HistoryDataMessage>(json);
-                    UnityMainThreadDispatcher.Instance.Enqueue(() =>
-                        HandleHistoryDataMessage(historyDataMsg));
-                    break;
-
-                case "new-history-created":
-                    var historyCreatedMsg = JsonConvert.DeserializeObject<HistoryCreatedMessage>(json);
-                    UnityMainThreadDispatcher.Instance.Enqueue(() =>
-                        HandleNewHistoryCreatedMessage(historyCreatedMsg));
-                    break;
-
-                case "history-deleted":
-                    var historyDeletedMsg = JsonConvert.DeserializeObject<HistoryDeletedMessage>(json);
-                    UnityMainThreadDispatcher.Instance.Enqueue(() =>
-                        HandleHistoryDeletedMessage(historyDeletedMsg));
-                    break;
-
-                case "set-model-and-conf":
-                    var modelConfigMsg = JsonConvert.DeserializeObject<ModelConfigMessage>(json);
-                    UnityMainThreadDispatcher.Instance.Enqueue(() =>
-                        HandleSetModelAndConfMessage(modelConfigMsg));
-                    break;
-
-                case "config-files":
-                    var configFilesMsg = JsonConvert.DeserializeObject<ConfigFilesMessage>(json);
-                    UnityMainThreadDispatcher.Instance.Enqueue(() =>
-                        HandleConfigFilesMessage(configFilesMsg));
-                    break;
-
-                case "background-files":
-                    var bgFilesMsg = JsonConvert.DeserializeObject<BackgroundFilesMessage>(json);
-                    UnityMainThreadDispatcher.Instance.Enqueue(() =>
-                        HandleBackgroundFilesMessage(bgFilesMsg));
-                    break;
-
-                default:
-                    Debug.LogWarning($"Unknown message type: {baseMessage.type}");
-                    break;
+            if (messageHandlers.TryGetValue(baseMessage.type, out var handler))
+            {
+                handler(json);
+            }
+            else
+            {
+                Debug.LogWarning($"Unknown message type: {baseMessage.type}");
             }
         }
         catch (Exception ex)
@@ -238,55 +183,68 @@ public class WebSocketClient : MonoBehaviour
         }
     }
 
-    // region 消息处理方法
+    private Action<string> HandleMessage<T>(Action<T> handler) where T : WebSocketMessage
+    {
+        return json =>
+        {
+            var message = JsonConvert.DeserializeObject<T>(json);
+            UnityMainThreadDispatcher.Instance.Enqueue(() => handler(message));
+        };
+    }
+
+    #region 消息处理方法
     private void HandleFullTextMessage(TextMessage msg)
     {
         displayText.text = $"\nAI: {msg.text}";
-        ScrollToBottom(); // 假设有自动滚动到底部的方法
+        ScrollToBottom();
+    }
+
+    private void HandleAudioMessage(AudioMessage msg)
+    {
+        Debug.Log($"Received audio message with text: {msg.text}");
+        displayText.text = $"\nAI: {msg.text}";
+        Debug.LogWarning($"Audio is to play!");
+        int voiceEntity = AudioManager.Instance.CreateAudioEntityFromBase64(msg.audio);
+        AudioManager.Instance.PlayAudio(voiceEntity);
+        Debug.LogWarning($"Audio is end!");
+        ScrollToBottom();
     }
 
     private void HandleHistoryListMessage(HistoryListMessage msg)
     {
         Debug.Log($"Received {msg.histories.Count} history items");
-        // 更新历史记录列表UI
     }
 
     private void HandleHistoryDataMessage(HistoryDataMessage msg)
     {
         Debug.Log($"Received {msg.messages.Count} history messages");
-        // 加载历史消息到对话界面
     }
 
     private void HandleNewHistoryCreatedMessage(HistoryCreatedMessage msg)
     {
         Debug.Log($"New history created: {msg.history_uid}");
-        // 刷新历史记录列表
     }
 
     private void HandleHistoryDeletedMessage(HistoryDeletedMessage msg)
     {
         Debug.Log($"History delete status: {msg.success}, UID: {msg.history_uid}");
-        // 更新UI状态
     }
 
     private void HandleSetModelAndConfMessage(ModelConfigMessage msg)
     {
         Debug.Log($"Model config updated: {msg.model_info}, {msg.conf_name}");
-        // 更新模型配置显示
     }
 
     private void HandleConfigFilesMessage(ConfigFilesMessage msg)
     {
         Debug.Log($"Available configs: {string.Join(", ", msg.configs)}");
-        // 更新配置下拉菜单
     }
 
     private void HandleBackgroundFilesMessage(BackgroundFilesMessage msg)
     {
         Debug.Log($"Background files: {string.Join(", ", msg.files)}");
-        // 更新背景选择面板
     }
-    // endregion
+    #endregion
 
     public void SendWebSocketMessage(WebSocketMessage message)
     {
@@ -308,16 +266,6 @@ public class WebSocketClient : MonoBehaviour
         }
     }
 
-    public void OnNewHistoryCreated()
-    {
-        SendWebSocketMessage(new TextMessage
-        {
-            type = "text-input",
-            text = inputField.text
-        });
-        inputField.text = "";
-    
-    }
     public void OnSendButtonClicked()
     {
         if (!string.IsNullOrEmpty(inputField.text))
@@ -340,7 +288,6 @@ public class WebSocketClient : MonoBehaviour
         }
     }
 
-    // 其他辅助方法
     private void ScrollToBottom()
     {
         // 实现滚动视图自动到底部逻辑
