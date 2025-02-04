@@ -1,10 +1,37 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;
+using System.Collections.Generic;
+
+[System.Serializable]
+public class UIElementOnlyWidth
+{
+    public Transform element; // UI 元素
+    public float originalScreenWidth; // 原始屏幕宽度,默认是1080
+    public float originalItemWidth; // 原始组件宽度
+}
+
+[System.Serializable]
+public class UIElementFullScreenWidth
+{
+    public Transform element; // UI 元素
+}
+
+[System.Serializable]
+public class UIElementSpaceBetween
+{
+    public Transform element; // UI 元素
+    public float originalScreenWidth; // 原始屏幕宽度,默认是1080
+    public float originalItemWidth; // 原始组件的宽度
+}
 
 public class UIElementMobileCompat : MonoBehaviour
 {
-    public Transform[] uiElements; // List of UI elements to adapt
+    public List<UIElementOnlyWidth> onlyWidth = new List<UIElementOnlyWidth>(); // onlyWidth, Inspector 可配置
+    public List<UIElementFullScreenWidth> fullScreenWidth = new List<UIElementFullScreenWidth>(); // fullScreenWidth, Inspector 可配置
+    public List<UIElementSpaceBetween> spaceBetween = new List<UIElementSpaceBetween>(); // Inspector 可配置
+
+    private float worldScreenWidth;
 
     void Start()
     {
@@ -14,104 +41,106 @@ public class UIElementMobileCompat : MonoBehaviour
             return;
         }
 
-        // Get screen pixel width and height
+        ComputeWorldScreenWidth();
+
+        // 动态调用方法
+        InvokeAdjustMethods(onlyWidth, "AdjustOnlyWidth");
+        InvokeAdjustMethods(fullScreenWidth, "AdjustFullScreenWidth");
+        InvokeAdjustMethods(spaceBetween, "AdjustSpaceBetween");
+    }
+
+    private void ComputeWorldScreenWidth()
+    {
         float screenWidth = Screen.width;
         float screenHeight = Screen.height;
-
-        // Compute screen dimensions in world units
         float worldScreenHeight = Camera.main.orthographicSize * 2.0f;
-        float worldScreenWidth = worldScreenHeight * (screenWidth / screenHeight);
+        worldScreenWidth = worldScreenHeight * (screenWidth / screenHeight);
+    }
 
-        //找到这些元素，就初始化成元素对象，否则初始化成空的
-        RectTransform chatPanel = uiElements.FirstOrDefault(e => e.name == "ChatPanel")?.GetComponent<RectTransform>();
-        RectTransform input = uiElements.FirstOrDefault(e => e.name == "Input")?.GetComponent<RectTransform>();
-        RectTransform others = uiElements.FirstOrDefault(e => e.name == "Others")?.GetComponent<RectTransform>();
-        RectTransform inputField = uiElements.FirstOrDefault(e => e.name == "InputField (TMP)")?.GetComponent<RectTransform>();
-
-        if (chatPanel == null || input == null || others == null || inputField == null)
+    private void InvokeAdjustMethods<T>(List<T> elements, string methodName)
+    {
+        foreach (var elementData in elements)
         {
-            Debug.LogError("One or more required UI elements are missing!");
-            return;
-        }
+            var element = elementData.GetType().GetField("element").GetValue(elementData) as Transform;
+            if (element == null) continue;
 
-        float inputMargin = chatPanel.rect.width - input.rect.width; // 90 的来源(chatpanel的宽度-input的宽度,输入框行的左右边距)
-        float othersMargin = chatPanel.rect.width - others.rect.width; // 105 的来源(chatpanel的宽度-others的宽度，others行的左右边距)
-        // Debug.Log($"inputMargin: {inputMargin}, othersMargin: {othersMargin}");
-
-        // 计算原始组件宽度
-        float inputOriginalWidth = input.rect.width;
-        float inputFieldOriginalWidth = inputField.rect.width;
-
-        // 计算 InputField 需要减去的边距
-        float inputFieldMargin = inputOriginalWidth - inputFieldOriginalWidth;
-
-        float totalButtonWidth = 0f;//计算按钮宽度总和
-        int buttonCount = 0;//计算按钮数量
-
-        foreach (Transform uiElement in uiElements)
-        {
-            if (uiElement == null) continue;
-            
-            RectTransform rt = uiElement.GetComponent<RectTransform>();
-
-            if (rt != null)
+            RectTransform rt = element.GetComponent<RectTransform>();
+            if (rt == null)
             {
-                if (uiElement.name == "Input")
-                {
-                    rt.sizeDelta = new Vector2(worldScreenWidth - inputMargin, rt.sizeDelta.y);
-                }
-                else if (uiElement.name == "InputField (TMP)")
-                {
-                    float inputFieldMinus = inputFieldMargin + inputMargin; 
-                    rt.sizeDelta = new Vector2(worldScreenWidth - inputFieldMinus, rt.sizeDelta.y);//调整输入框的宽度
-                }
-                else if (uiElement.name == "Others")
-                {
-                    rt.sizeDelta = new Vector2(worldScreenWidth - othersMargin, rt.sizeDelta.y);
-                }
-                else
-                {
-                    rt.sizeDelta = new Vector2(worldScreenWidth, rt.sizeDelta.y);
-                }
+                Debug.LogWarning($"{element.name} does not have a RectTransform component.");
+                continue;
+            }
 
-                if (uiElement.name == "Others")
+            System.Reflection.MethodInfo method = GetType().GetMethod(methodName, 
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+            if (method != null)
+            {
+                var parameters = method.GetParameters();
+                var args = new List<object> { rt };
+
+                foreach (var param in parameters.Skip(1)) // Skip the first parameter (RectTransform)
                 {
-                    HorizontalLayoutGroup layoutGroup = uiElement.GetComponent<HorizontalLayoutGroup>();
-                    if (layoutGroup != null)
+                    var field = elementData.GetType().GetField(param.Name, 
+                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (field != null)
                     {
-                        Transform[] buttons = uiElement.Cast<Transform>().ToArray();//获取子对象：所有按钮
-
-                        foreach (Transform button in buttons)
-                        {
-                            RectTransform buttonRT = button.GetComponent<RectTransform>();
-                            if (buttonRT != null)
-                            {
-                                totalButtonWidth += buttonRT.rect.width;
-                                buttonCount++;
-                            }
-                        }
-
-                        if (buttonCount > 1)
-                        {
-                            layoutGroup.spacing = (worldScreenWidth - othersMargin - totalButtonWidth) / (buttonCount - 1);
-                        }
+                        args.Add(field.GetValue(elementData));
                     }
                     else
                     {
-                        Debug.LogError("Others 组件上没有 HorizontalLayoutGroup!");
+                        Debug.LogError($"Field {param.Name} not found in {elementData.GetType().Name}");
                     }
                 }
 
-                if (uiElement.name == "Live2D Canvas" || uiElement.name == "BackgroundPanel" || uiElement.name == "Background Image" || uiElement.name == "ChatPanel" || uiElement.name == "SettingsTopPanel" || uiElement.name == "TopPanel" || uiElement.name == "UICanvas")
-                {
-                    //居中
-                    rt.localPosition = new Vector3(0, rt.localPosition.y, rt.localPosition.z);
-                }
+                method.Invoke(this, args.ToArray());
             }
             else
             {
-                Debug.LogError($"{uiElement.name} does not have a RectTransform component.");
+                Debug.LogError($"Method {methodName} not found in {GetType().Name}");
             }
         }
+    }
+
+
+
+    // **可被动态调用的方法**
+    private void AdjustOnlyWidth(RectTransform element, float originalScreenWidth, float originalItemWidth)
+    {
+        element.sizeDelta = new Vector2(worldScreenWidth - (originalScreenWidth - originalItemWidth), element.sizeDelta.y);
+    }
+
+    private void AdjustSpaceBetween(RectTransform element, float originalScreenWidth, float originalItemWidth)
+    {
+        float originalItemMargin = originalScreenWidth - originalItemWidth;
+        element.sizeDelta = new Vector2(worldScreenWidth - originalItemMargin, element.sizeDelta.y);
+
+        HorizontalLayoutGroup layoutGroup = element.GetComponent<HorizontalLayoutGroup>();
+        if (layoutGroup != null)
+        {
+            Transform[] buttons = element.Cast<Transform>().ToArray();
+            float totalButtonWidth = buttons.Sum(button => button.GetComponent<RectTransform>()?.rect.width ?? 0);
+            int buttonCount = buttons.Length;
+
+            if (buttonCount > 1)
+            {
+                layoutGroup.spacing = (worldScreenWidth - originalItemMargin - totalButtonWidth) / (buttonCount - 1);
+            }
+            else
+            {
+                Debug.LogError("错误:图标数量<=1");
+            }
+        }
+        else
+        {
+            Debug.LogError("Element does not have a HorizontalLayoutGroup component!");
+        }
+    }
+
+
+    private void AdjustFullScreenWidth(RectTransform rt)
+    {
+        rt.sizeDelta = new Vector2(worldScreenWidth, rt.sizeDelta.y);
+        rt.localPosition = new Vector3(0, rt.localPosition.y, rt.localPosition.z);
     }
 }
