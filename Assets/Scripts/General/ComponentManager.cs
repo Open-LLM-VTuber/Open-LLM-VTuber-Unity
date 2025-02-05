@@ -6,11 +6,9 @@ using System.Reflection;
 
 namespace ECS
 {
-    // 组件标记接口
-    public interface IComponent { }
 
     // 基础组件实现
-    public abstract class Component : IComponent
+    public abstract class Component
     {
         // 组件所属实体ID（自动注入）
         public int EntityId { get; internal set; } = -1;
@@ -21,19 +19,6 @@ namespace ECS
         // 虚方法供子类重写
         public virtual void Reset() { }
 
-        private bool disposed = false;
-
-        public virtual void Dispose()
-        {
-            if (!disposed)
-            {
-                OnDispose();
-                disposed = true;
-                GC.SuppressFinalize(this);
-            }
-        }
-        protected virtual void OnDispose() { }
-        ~Component() => Dispose();
     }
 
     public class ComponentManager : MonoBehaviour

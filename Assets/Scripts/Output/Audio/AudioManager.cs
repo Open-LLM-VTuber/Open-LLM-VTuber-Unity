@@ -1,5 +1,8 @@
 using UnityEngine;
 using ECS;
+using System;
+using System.Collections;
+using System.Threading.Tasks;
 
 public class AudioManager : MonoBehaviour
 {
@@ -72,18 +75,29 @@ public class AudioManager : MonoBehaviour
         return entity;
     }
 
-    public int CreateAudioEntityFromBase64(string base64, int sampleRate = 44100)
+    public int CreateAudioEntityFromBase64(string base64, bool playOnCreate = true)
     {
-        AudioClip clip = Base64AudioClipConverter.ConvertBase64ToAudioClip(base64, sampleRate);
-        return CreateAudioEntity(clip);
+        AudioClip clip = Base64AudioClipConverter.ConvertBase64ToAudioClip(base64);
+        return CreateAudioEntity(clip, playOnCreate);
     }
 
-    public void PlayAudio(int entityId)
+    public void PlayAudio(int entityId, Action onFinishedCallback = null)
     {
         if (_componentManager.GetComponent<AudioComponent>(entityId) is AudioComponent comp)
         {
+            // 开始播放音频, 通过更改状态让音频播放系统感知到变化
             comp.PlayOnCreate = true;
-            _componentManager.AddComponent(entityId, comp);
+            // 使用协程等待音频播放完成
+            StartCoroutine(WaitForAudioCompletion(comp.Clip, onFinishedCallback));
+        }
+    }
+
+    private IEnumerator WaitForAudioCompletion(AudioClip clip, Action onFinishedCallback)
+    {
+        yield return new WaitForSeconds(clip.length);
+        if (onFinishedCallback != null)
+        {
+            onFinishedCallback(); // 音频播放完成后调用回调函数
         }
     }
 
@@ -91,24 +105,24 @@ public class AudioManager : MonoBehaviour
     {
         if (_componentManager.GetComponent<AudioComponent>(entityId) is AudioComponent comp)
         {
-            comp.Source?.Stop();
+            comp.Source.Stop();
             comp.PlayOnCreate = false;
-            _componentManager.AddComponent(entityId, comp);
         }
+    }
+
+    public void RemoveAudio(int entityId)
+    {
+        _componentManager.RemoveComponent<AudioComponent>(entityId);
+        _entityManager.RemoveEntity(entityId);
     }
 
     void OnDestroy()
     {
         // 清理所有音频实体
-        foreach (var entity in _entityManager.GetActiveEntities())
+        foreach (var entityId in _entityManager.GetActiveEntitiesSnapshot())
         {
-            if (_componentManager.GetComponent<AudioComponent>(entity) is AudioComponent comp)
-            {
-                comp.Dispose();
-            }
-            _entityManager.DestroyEntity(entity);
+            RemoveAudio(entityId);
         }
-
         // 注销系统
         SystemManager.Instance.UnregisterSystem(_audioSystem);
     }

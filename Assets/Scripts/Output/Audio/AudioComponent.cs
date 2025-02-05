@@ -14,15 +14,5 @@ namespace ECS
         // 运行时状态
         [NonSerialized] public AudioSource Source;
         public bool IsPlaying => Source != null && Source.isPlaying;
-
-        public override void Dispose()
-        {
-            if (Source != null)
-            {
-                // 如果使用对象池，此处应归还资源
-                GameObject.Destroy(Source.gameObject);
-                Source = null;
-            }
-        }
     }
 }

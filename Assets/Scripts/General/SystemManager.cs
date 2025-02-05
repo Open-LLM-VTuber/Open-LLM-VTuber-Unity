@@ -31,8 +31,8 @@ namespace ECS
         protected System(SystemType type, EntityManager em, ComponentManager cm)
         {
             Type = type;
-            EntityManager = em;
-            ComponentManager = cm;
+            EntityManager = em ?? throw new ArgumentNullException(nameof(em));
+            ComponentManager = cm ?? throw new ArgumentNullException(nameof(cm));
         }
 
         // 主更新入口

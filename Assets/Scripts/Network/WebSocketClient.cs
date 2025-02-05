@@ -5,6 +5,7 @@ using TMPro;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 
+
 public class WebSocketClient : MonoBehaviour
 {
     #region 自定义数据结构
@@ -100,10 +101,16 @@ public class WebSocketClient : MonoBehaviour
     }
     #endregion
 
-    private WebSocket ws;
     public TMP_InputField inputField;
     public TMP_Text displayText;
+
+    private WebSocket ws;
     private string serverUrl;
+
+    // 音频消息队列
+    private Queue<AudioMessage> audioMessageQueue = new Queue<AudioMessage>();
+    private bool isAudioPlaying = false;
+
 
     void Start()
     {
@@ -157,7 +164,7 @@ public class WebSocketClient : MonoBehaviour
             var messageHandlers = new Dictionary<string, Action<string>>
             {
                 { "full-text", HandleMessage<TextMessage>(HandleFullTextMessage) },
-                { "control", HandleMessage<TextMessage>(HandleFullTextMessage) },
+                { "control", HandleMessage<TextMessage>(HandleControlTextMessage) },
                 { "audio", HandleMessage<AudioMessage>(HandleAudioMessage) },
                 { "history-list", HandleMessage<HistoryListMessage>(HandleHistoryListMessage) },
                 { "history-data", HandleMessage<HistoryDataMessage>(HandleHistoryDataMessage) },
@@ -168,6 +175,7 @@ public class WebSocketClient : MonoBehaviour
                 { "background-files", HandleMessage<BackgroundFilesMessage>(HandleBackgroundFilesMessage) }
             };
 
+
             if (messageHandlers.TryGetValue(baseMessage.type, out var handler))
             {
                 handler(json);
@@ -176,6 +184,7 @@ public class WebSocketClient : MonoBehaviour
             {
                 Debug.LogWarning($"Unknown message type: {baseMessage.type}");
             }
+            
         }
         catch (Exception ex)
         {
@@ -199,15 +208,40 @@ public class WebSocketClient : MonoBehaviour
         ScrollToBottom();
     }
 
+    private void HandleControlTextMessage(TextMessage msg)
+    {
+        
+    }
+
     private void HandleAudioMessage(AudioMessage msg)
     {
         Debug.Log($"Received audio message with text: {msg.text}");
-        displayText.text = $"\nAI: {msg.text}";
-        Debug.LogWarning($"Audio is to play!");
-        int voiceEntity = AudioManager.Instance.CreateAudioEntityFromBase64(msg.audio);
-        AudioManager.Instance.PlayAudio(voiceEntity);
-        Debug.LogWarning($"Audio is end!");
-        ScrollToBottom();
+        // 将音频消息加入队列
+        audioMessageQueue.Enqueue(msg);
+        // 如果当前没有音频正在播放，则立即播放队列中的第一条消息
+        if (!isAudioPlaying)
+        {
+            PlayNextAudio();
+        }
+    }
+
+    private void PlayNextAudio()
+    {
+        if (audioMessageQueue.Count > 0)
+        {
+            isAudioPlaying = true;
+            AudioMessage msg = audioMessageQueue.Dequeue();
+            displayText.text = $"\nAI: {msg.text}"; // 先更新文本
+            // 创建时不要立刻播放音频
+            int voiceEntity = AudioManager.Instance.CreateAudioEntityFromBase64(msg.audio, playOnCreate: false);
+            // 用管理器播放音频，并在播放完成后处理下一条消息
+            AudioManager.Instance.PlayAudio(voiceEntity, () =>
+            {
+                isAudioPlaying = false;
+                AudioManager.Instance.RemoveAudio(voiceEntity);
+                PlayNextAudio();
+            });
+        }
     }
 
     private void HandleHistoryListMessage(HistoryListMessage msg)

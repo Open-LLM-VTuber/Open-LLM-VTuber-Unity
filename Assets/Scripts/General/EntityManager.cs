@@ -39,25 +39,28 @@ namespace ECS
             return id;
         }
 
-        public void DestroyEntity(int entityId)
+        public void RemoveEntity(int entityId)
         {
+            if (!activeEntities.Contains(entityId))
+            {
+                return;
+            }
+            OnEntityDestroying?.Invoke(entityId);
             if (activeEntities.Remove(entityId))
             {
+                if (recycledIds.Count > 1000)
+                    return;
                 recycledIds.Enqueue(entityId);
             }
-        }
-        public void SafeDestroyEntity(int entityId)
-        {
-            if (!activeEntities.Contains(entityId)) return;
-
-            // 触发组件销毁事件
-            OnEntityDestroying?.Invoke(entityId);
-
-            DestroyEntity(entityId);
         }
 
         public event Action<int> OnEntityDestroying;
 
         public IEnumerable<int> GetActiveEntities() => activeEntities;
+
+        public List<int> GetActiveEntitiesSnapshot()
+        {
+            return new List<int>(activeEntities); // 创建副本
+        }
     }
 }
