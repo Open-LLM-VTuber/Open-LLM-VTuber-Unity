@@ -1,13 +1,13 @@
 using UnityEngine;
-using UnityEngine.UI;
 using System.Linq;
 using System.Collections.Generic;
+using UnityEngine.UI;
 
 [System.Serializable]
 public class UIElementOnlyWidth
 {
     public Transform element; // UI 元素
-    public float originalScreenWidth; // 原始屏幕宽度,默认是1080
+    public float originalScreenWidth = 1080; // 原始屏幕宽度
     public float originalItemWidth; // 原始组件宽度
 }
 
@@ -21,7 +21,7 @@ public class UIElementFullScreenWidth
 public class UIElementSpaceBetween
 {
     public Transform element; // UI 元素
-    public float originalScreenWidth; // 原始屏幕宽度,默认是1080
+    public float originalScreenWidth = 1080; // 原始屏幕宽度
     public float originalItemWidth; // 原始组件的宽度
 }
 
@@ -43,10 +43,9 @@ public class UIElementMobileCompat : MonoBehaviour
 
         ComputeWorldScreenWidth();
 
-        // 动态调用方法
-        InvokeAdjustMethods(onlyWidth, "AdjustOnlyWidth");
-        InvokeAdjustMethods(fullScreenWidth, "AdjustFullScreenWidth");
-        InvokeAdjustMethods(spaceBetween, "AdjustSpaceBetween");
+        AdjustOnlyWidthElements();
+        AdjustFullScreenWidthElements();
+        AdjustSpaceBetweenElements();
     }
 
     private void ComputeWorldScreenWidth()
@@ -57,11 +56,11 @@ public class UIElementMobileCompat : MonoBehaviour
         worldScreenWidth = worldScreenHeight * (screenWidth / screenHeight);
     }
 
-    private void InvokeAdjustMethods<T>(List<T> elements, string methodName)
+    private void AdjustOnlyWidthElements()
     {
-        foreach (var elementData in elements)
+        foreach (var elementData in onlyWidth)
         {
-            var element = elementData.GetType().GetField("element").GetValue(elementData) as Transform;
+            var element = elementData.element;
             if (element == null) continue;
 
             RectTransform rt = element.GetComponent<RectTransform>();
@@ -71,76 +70,65 @@ public class UIElementMobileCompat : MonoBehaviour
                 continue;
             }
 
-            System.Reflection.MethodInfo method = GetType().GetMethod(methodName, 
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            rt.sizeDelta = new Vector2(worldScreenWidth - (elementData.originalScreenWidth - elementData.originalItemWidth), rt.sizeDelta.y);
+        }
+    }
 
-            if (method != null)
+    private void AdjustFullScreenWidthElements()
+    {
+        foreach (var elementData in fullScreenWidth)
+        {
+            var element = elementData.element;
+            if (element == null) continue;
+
+            RectTransform rt = element.GetComponent<RectTransform>();
+            if (rt == null)
             {
-                var parameters = method.GetParameters();
-                var args = new List<object> { rt };
+                Debug.LogWarning($"{element.name} does not have a RectTransform component.");
+                continue;
+            }
 
-                foreach (var param in parameters.Skip(1)) // Skip the first parameter (RectTransform)
+            rt.sizeDelta = new Vector2(worldScreenWidth, rt.sizeDelta.y);
+            rt.localPosition = new Vector3(0, rt.localPosition.y, rt.localPosition.z);
+        }
+    }
+
+    private void AdjustSpaceBetweenElements()
+    {
+        foreach (var elementData in spaceBetween)
+        {
+            var element = elementData.element;
+            if (element == null) continue;
+
+            RectTransform rt = element.GetComponent<RectTransform>();
+            if (rt == null)
+            {
+                Debug.LogWarning($"{element.name} does not have a RectTransform component.");
+                continue;
+            }
+
+            rt.sizeDelta = new Vector2(worldScreenWidth - (elementData.originalScreenWidth - elementData.originalItemWidth), rt.sizeDelta.y);
+
+            HorizontalLayoutGroup layoutGroup = element.GetComponent<HorizontalLayoutGroup>();
+            if (layoutGroup != null)
+            {
+                Transform[] buttons = element.Cast<Transform>().ToArray();
+                float totalButtonWidth = buttons.Sum(button => button.GetComponent<RectTransform>()?.rect.width ?? 0);
+                int buttonCount = buttons.Length;
+
+                if (buttonCount > 1)
                 {
-                    var field = elementData.GetType().GetField(param.Name, 
-                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                    if (field != null)
-                    {
-                        args.Add(field.GetValue(elementData));
-                    }
-                    else
-                    {
-                        Debug.LogError($"Field {param.Name} not found in {elementData.GetType().Name}");
-                    }
+                    layoutGroup.spacing = (worldScreenWidth - (elementData.originalScreenWidth - elementData.originalItemWidth) - totalButtonWidth) / (buttonCount - 1);
                 }
-
-                method.Invoke(this, args.ToArray());
+                else
+                {
+                    Debug.LogError("Error: Icon count <= 1");
+                }
             }
             else
             {
-                Debug.LogError($"Method {methodName} not found in {GetType().Name}");
+                Debug.LogError("Element does not have a HorizontalLayoutGroup component!");
             }
         }
-    }
-
-
-
-    // **可被动态调用的方法**
-    private void AdjustOnlyWidth(RectTransform element, float originalScreenWidth, float originalItemWidth)
-    {
-        element.sizeDelta = new Vector2(worldScreenWidth - (originalScreenWidth - originalItemWidth), element.sizeDelta.y);
-    }
-
-    private void AdjustSpaceBetween(RectTransform element, float originalScreenWidth, float originalItemWidth)
-    {
-        float originalItemMargin = originalScreenWidth - originalItemWidth;
-        element.sizeDelta = new Vector2(worldScreenWidth - originalItemMargin, element.sizeDelta.y);
-
-        HorizontalLayoutGroup layoutGroup = element.GetComponent<HorizontalLayoutGroup>();
-        if (layoutGroup != null)
-        {
-            Transform[] buttons = element.Cast<Transform>().ToArray();
-            float totalButtonWidth = buttons.Sum(button => button.GetComponent<RectTransform>()?.rect.width ?? 0);
-            int buttonCount = buttons.Length;
-
-            if (buttonCount > 1)
-            {
-                layoutGroup.spacing = (worldScreenWidth - originalItemMargin - totalButtonWidth) / (buttonCount - 1);
-            }
-            else
-            {
-                Debug.LogError("错误:图标数量<=1");
-            }
-        }
-        else
-        {
-            Debug.LogError("Element does not have a HorizontalLayoutGroup component!");
-        }
-    }
-
-
-    private void AdjustFullScreenWidth(RectTransform rt)
-    {
-        rt.sizeDelta = new Vector2(worldScreenWidth, rt.sizeDelta.y);
-        rt.localPosition = new Vector3(0, rt.localPosition.y, rt.localPosition.z);
     }
 }
