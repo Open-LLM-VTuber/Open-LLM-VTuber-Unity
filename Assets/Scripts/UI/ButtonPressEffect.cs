@@ -29,7 +29,6 @@ public class ButtonPressEffect : MonoBehaviour, IPointerDownHandler, IPointerUpH
 
     private Vector3 originalScale; // 按钮的原始缩放
     private Vector3 originalLocalPosition; // 按钮的原始本地位置
-    private bool isPressed = false; // 是否正在按下
     private Sequence pressSequence; // 用于存储按下动画序列
 
     private void Start()
@@ -42,8 +41,6 @@ public class ButtonPressEffect : MonoBehaviour, IPointerDownHandler, IPointerUpH
     // 当按钮被按下时调用
     public void OnPointerDown(PointerEventData eventData)
     {
-        isPressed = true;
-
         // 停止之前的动画
         if (pressSequence != null && pressSequence.IsActive())
         {
@@ -64,8 +61,6 @@ public class ButtonPressEffect : MonoBehaviour, IPointerDownHandler, IPointerUpH
     // 当按钮被释放时调用
     public void OnPointerUp(PointerEventData eventData)
     {
-        isPressed = false;
-
         // 停止之前的动画
         if (pressSequence != null && pressSequence.IsActive())
         {

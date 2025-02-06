@@ -123,7 +123,10 @@ public class AudioManager : MonoBehaviour
         {
             RemoveAudio(entityId);
         }
-        // 注销系统
-        SystemManager.Instance.UnregisterSystem(_audioSystem);
+        if (SystemManager.Instance != null)
+        {
+            // 注销系统
+            SystemManager.Instance.UnregisterSystem(_audioSystem);
+        }
     }
 }
