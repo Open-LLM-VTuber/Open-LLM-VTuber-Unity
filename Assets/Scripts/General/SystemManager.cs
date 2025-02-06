@@ -71,6 +71,7 @@ namespace ECS
         private List<System> _systems = new List<System>();
         private readonly object _lock = new object();
         public static SystemManager Instance { get; private set; }
+        public int MaxSystemsPerFrame { get; set; } = 5;
 
         void Awake()
         {
@@ -112,12 +113,14 @@ namespace ECS
         {
             lock (_lock)
             {
-                // 每帧最多更新3个中等及以上优先级系统
+                // 确保按优先级排序
+                //_systems.Sort((a, b) => a.Priority.CompareTo(b.Priority));
                 int count = 0;
                 foreach (var system in _systems)
                 {
-                    if (system.Priority >= SystemPriority.Normal && count++ >= 3) break;
+                    if (count >= MaxSystemsPerFrame) break;
                     system.Update();
+                    count++;
                 }
             }
         }

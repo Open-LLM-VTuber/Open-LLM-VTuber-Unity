@@ -24,7 +24,6 @@ public class ScrollbarTextUpdater : MonoBehaviour
         if (!string.IsNullOrEmpty(settingName))
         {
             string settingsValue = SettingsManager.Instance.GetSetting(settingName);
-            Debug.Log(settingsValue + "  " + settingName);
             scrollbar.value = (float.Parse(settingsValue) - minValue) / (maxValue - minValue);
         }
         // 添加监听器，当Scrollbar的值变化时调用OnScrollbarValueChanged方法
