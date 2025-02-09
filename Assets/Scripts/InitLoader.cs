@@ -8,26 +8,30 @@ public class InitLoader : MonoBehaviour
         // 检查是否已经存在 Global Settings 实例
         if (FindObjectOfType<SettingsManager>() == null)
         {
-            // 创建 Global Settings GameObject
             GameObject globalSettings = new GameObject("Global Settings");
-
-            // 挂载所有 Manager 组件
             globalSettings.AddComponent<FPS>();
             globalSettings.AddComponent<SystemScale>();
             globalSettings.AddComponent<SettingsManager>();
             globalSettings.AddComponent<UnityMainThreadDispatcher>();
 
-            globalSettings.AddComponent<EntityManager>();
-            globalSettings.AddComponent<ComponentManager>();
-            globalSettings.AddComponent<SystemManager>();
+            GameObject globalManagers = new GameObject("Global Managers");
+            globalManagers.AddComponent<EntityManager>();
+            globalManagers.AddComponent<ComponentManager>();
+            globalManagers.AddComponent<SystemManager>();
+            globalManagers.AddComponent<HistoryManager>();
+            globalManagers.AddComponent<AudioManager>();
+            globalManagers.AddComponent<WebSocketManager>();
 
-            globalSettings.AddComponent<HistoryManager>();
-            globalSettings.AddComponent<AudioManager>();
-
-            // 添加其他 Manager...
+            GameObject globalHandlers = new GameObject("Global Handlers");
+            globalHandlers.AddComponent<TextMessageHandler>();
+            globalHandlers.AddComponent<AudioMessageHandler>();
+            globalHandlers.AddComponent<HistoryMessageHandler>();
+            globalHandlers.AddComponent<ConfigMessageHandler>();
 
             // 设置为 DontDestroyOnLoad
             DontDestroyOnLoad(globalSettings);
+            DontDestroyOnLoad(globalManagers);
+            DontDestroyOnLoad(globalHandlers);
         }
         else
         {

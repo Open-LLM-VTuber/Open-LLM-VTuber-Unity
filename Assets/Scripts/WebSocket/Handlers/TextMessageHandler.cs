@@ -4,14 +4,18 @@ using UnityEngine;
 using TMPro;
 
 // Handlers/TextMessageHandler.cs
-public class TextMessageHandler : MonoBehaviour
+public class TextMessageHandler : InitOnceSingleton<TextMessageHandler>
 {
     [SerializeField] private TMP_Text _displayText;
 
     public void Initialize(WebSocketManager wsManager, TMP_Text displayText)
     {
-        wsManager.RegisterHandler("full-text", HandleFullText);
-        wsManager.RegisterHandler("control", HandleControlText);
+        InitOnce(() =>
+        {
+            wsManager.RegisterHandler("full-text", HandleFullText);
+            wsManager.RegisterHandler("control", HandleControlText);
+        });
+        
         if (displayText != null)
         {
             _displayText = displayText;

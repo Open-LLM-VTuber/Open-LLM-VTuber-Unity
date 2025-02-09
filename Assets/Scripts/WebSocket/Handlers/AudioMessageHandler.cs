@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
-public class AudioMessageHandler : MonoBehaviour
+public class AudioMessageHandler : InitOnceSingleton<AudioMessageHandler>
 {
     [SerializeField] private TMP_Text _displayText;
 
@@ -12,7 +12,11 @@ public class AudioMessageHandler : MonoBehaviour
 
     public void Initialize(WebSocketManager wsManager, TMP_Text displayText)
     {
-        wsManager.RegisterHandler("audio", HandleAudioMessage);
+        InitOnce(() =>
+        {
+            wsManager.RegisterHandler("audio", HandleAudioMessage);
+        });
+        
         _displayText = displayText;
     }
 

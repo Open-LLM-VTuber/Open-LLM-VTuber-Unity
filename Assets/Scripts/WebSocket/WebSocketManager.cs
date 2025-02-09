@@ -4,21 +4,21 @@ using WebSocketSharp;
 using UnityEngine;
 
 // WebSocketManager.cs
-public class WebSocketManager : MonoBehaviour
+public sealed class WebSocketManager : InitOnceSingleton<WebSocketManager>
 {
+    public string Url { get; private set; }
     private WebSocket ws;
     private MessageDispatcher dispatcher;
-
-    private void Awake()
+    public void Initialize()
     {
-        dispatcher = new MessageDispatcher();
-    }
-
-    public void Initialize(string url)
-    {
-        ws = new WebSocket(url);
-        ConfigureEventHandlers();
-        ws.Connect();
+        InitOnce(() =>
+        {
+            Url = SettingsManager.Instance.GetSetting("WebSocketUrl");
+            dispatcher = new MessageDispatcher();
+            ws = new WebSocket(Url);
+            ConfigureEventHandlers();
+            ws.Connect();
+        });
     }
 
     private void ConfigureEventHandlers()

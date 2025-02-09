@@ -27,7 +27,14 @@ public class ModelInfo
 [Serializable]
 public class ConfigFilesMessage : WebSocketMessage
 {
-    public string[] configs;
+    public ConfigFile[] configs;
+}
+
+[Serializable]
+public class ConfigFile
+{
+    public string filename;
+    public string name;
 }
 
 [Serializable]

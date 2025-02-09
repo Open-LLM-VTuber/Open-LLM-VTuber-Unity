@@ -8,7 +8,7 @@ public class ChatManager : MonoBehaviour
     public GameObject chatBubbleRight; // 人类聊天预制体
     public GameObject chatBubbleLeft;    // AI聊天预制体
     public Transform parentObject;      // 父对象
-    public RectTransform scrollView;
+    public RectTransform scrollViewport;
 
     void Start()
     {
@@ -61,10 +61,6 @@ public class ChatManager : MonoBehaviour
             GameObject chatObject = Instantiate(prefab, parentObject);
             chatObject.GetComponent<ChatContent>().SetContent(message.content);
         }
-        if (scrollView != null)
-        {
-            // 强制重新布局 content 的 RectTransform
-            LayoutRebuilder.ForceRebuildLayoutImmediate(scrollView);
-        }
+        Canvas.ForceUpdateCanvases();
     }
 }

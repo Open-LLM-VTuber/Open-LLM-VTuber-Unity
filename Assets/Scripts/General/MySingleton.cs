@@ -16,11 +16,12 @@ public class Singleton<T> : MonoBehaviour where T : MonoBehaviour
         {
             return existingInstance;
         }
-
+        Debug.LogWarning($"{typeof(T).Name}");
         // 如果不存在，则创建一个新的 GameObject 并附加组件
         var singletonObject = new GameObject(typeof(T).Name);
         var instance = singletonObject.AddComponent<T>();
         DontDestroyOnLoad(singletonObject); // 确保在场景切换时不销毁
+
         return instance;
     }
 
@@ -31,5 +32,30 @@ public class Singleton<T> : MonoBehaviour where T : MonoBehaviour
         {
             Destroy(gameObject);
         }
+    }
+}
+
+
+public abstract class InitOnceSingleton<T> : Singleton<T> where T : MonoBehaviour
+{
+    private bool _isInitialized = false; // 标志位，记录是否已经初始化
+
+    /// <summary>
+    /// 确保初始化逻辑只会执行一次
+    /// </summary>
+    protected void InitOnce(Action initAction)
+    {
+        if (_isInitialized)
+        {
+            //Debug.LogWarning($"{typeof(T).Name} has already been initialized.");
+            return;
+        }
+
+        // 执行初始化逻辑
+        initAction?.Invoke();
+
+        // 标记为已初始化
+        _isInitialized = true;
+        Debug.Log($"{typeof(T).Name} initialized successfully.");
     }
 }

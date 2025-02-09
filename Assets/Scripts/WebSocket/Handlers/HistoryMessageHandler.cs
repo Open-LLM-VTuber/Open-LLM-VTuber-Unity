@@ -3,15 +3,26 @@ using Newtonsoft.Json;
 using UnityEngine;
 
 // Handlers/HistoryMessageHandler.cs
-public class HistoryMessageHandler : MonoBehaviour
+public class HistoryMessageHandler : InitOnceSingleton<HistoryMessageHandler>
 {
     public void Initialize(WebSocketManager wsManager)
     {
-        wsManager.RegisterHandler("history-list", HandleHistoryList);
-        wsManager.RegisterHandler("history-data", HandleHistoryData);
-        wsManager.RegisterHandler("new-history-created", HandleNewHistory);
-        wsManager.RegisterHandler("history-deleted", HandleHistoryDeleted);
-        
+
+        InitOnce(() =>
+        {
+            wsManager.RegisterHandler("history-list", HandleHistoryList);
+            wsManager.RegisterHandler("history-data", HandleHistoryData);
+            wsManager.RegisterHandler("new-history-created", HandleNewHistory);
+            wsManager.RegisterHandler("history-deleted", HandleHistoryDeleted);
+            RequestInitialData();
+        });
+    }
+
+    private void RequestInitialData()
+    {
+        var wsManager = WebSocketManager.Instance;
+        wsManager.Send(new WebSocketMessage { type = "fetch-history-list" });
+        wsManager.Send(new WebSocketMessage { type = "create-new-history" });
     }
 
     private void HandleHistoryList(WebSocketMessage message)

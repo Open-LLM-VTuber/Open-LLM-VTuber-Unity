@@ -2,15 +2,26 @@
 using UnityEngine;
 
 // Handlers/ConfigMessageHandler.cs
-public class ConfigMessageHandler : MonoBehaviour
+public class ConfigMessageHandler : InitOnceSingleton<ConfigMessageHandler>
 {
     public void Initialize(WebSocketManager wsManager)
     {
-        wsManager.RegisterHandler("set-model-and-conf", HandleModelConfig);
-        wsManager.RegisterHandler("config-files", HandleConfigFiles);
-        wsManager.RegisterHandler("background-files", HandleBackgroundFiles);
+        InitOnce(()=>
+        {
+            wsManager.RegisterHandler("set-model-and-conf", HandleModelConfig);
+            wsManager.RegisterHandler("config-files", HandleConfigFiles);
+            wsManager.RegisterHandler("background-files", HandleBackgroundFiles);
+            RequestInitialData();
+        });
+        
     }
 
+    private void RequestInitialData()
+    {
+        var wsManager = WebSocketManager.Instance;
+        wsManager.Send(new WebSocketMessage { type = "fetch-configs" });
+        wsManager.Send(new WebSocketMessage { type = "fetch-backgrounds" });
+    }
     private void HandleModelConfig(WebSocketMessage message)
     {
         var configMsg = message as ModelConfigMessage;
@@ -21,7 +32,7 @@ public class ConfigMessageHandler : MonoBehaviour
     private void HandleConfigFiles(WebSocketMessage message)
     {
         var configFiles = message as ConfigFilesMessage;
-        Debug.Log($"Available configs: {string.Join(", ", configFiles.configs)}");
+        Debug.Log($"Available configs: {configFiles.configs}");
         //ConfigManager.Instance.UpdateAvailableConfigs(configFiles.configs);
     }
 
