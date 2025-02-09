@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using UnityEngine.UI;
+using System.Linq;
 
 public class AudioCapture : MonoBehaviour
 {
@@ -10,7 +11,7 @@ public class AudioCapture : MonoBehaviour
 
     // 采样率和块大小
     private int sampleRate = 16000; // 16000Hz
-    private float blockSize = 0.1f; // 0.1秒
+    private float blockSize = 0.032f; // Default sampleRate = 16000, frameSamples = 512, buffer window = 32ms
     private int samplesPerBlock; // 每个块的采样点数
 
     // UI 按钮
@@ -19,6 +20,9 @@ public class AudioCapture : MonoBehaviour
     // 按钮颜色
     public Color activeColor = new Color(0f, 0.5f, 1f); // 淡蓝色
     public Color inactiveColor = new Color(0f, 0f, 0f); // 黑色
+
+    // WebSocket 管理器
+    private WebSocketManager wsManager;
 
     void Start()
     {
@@ -34,6 +38,9 @@ public class AudioCapture : MonoBehaviour
         {
             Debug.LogError("UI elements not assigned!");
         }
+
+        // 获取 WebSocketManager 实例
+        wsManager = WebSocketManager.Instance;
     }
 
     public void ToggleRecording()
@@ -60,7 +67,7 @@ public class AudioCapture : MonoBehaviour
             microphoneInput = Microphone.Start(selectedDevice, true, 1, sampleRate); // 1秒缓冲区
             isRecording = true;
             Debug.Log("Recording started with device: " + selectedDevice);
-
+            WebSocketController.Interrupt();
             // 启动协程处理音频块
             StartCoroutine(ProcessAudioBlocks());
         }
@@ -77,6 +84,9 @@ public class AudioCapture : MonoBehaviour
             Microphone.End(selectedDevice);
             isRecording = false;
             Debug.Log("Recording stopped.");
+
+            // 发送音频结束信号
+            SendAudioEndSignal();
         }
     }
 
@@ -97,25 +107,29 @@ public class AudioCapture : MonoBehaviour
                 float[] audioData = new float[samplesPerBlock];
                 microphoneInput.GetData(audioData, micPosition - samplesPerBlock);
 
-                // 计算RMS音量
-                float volume = CalculateRMSVolume(audioData);
-                Debug.Log("Audio block RMS volume: " + volume);
+                // 发送音频数据到后端
+                SendAudioData(audioData);
             }
         }
     }
 
-    float CalculateRMSVolume(float[] audioData)
+    void SendAudioData(float[] audioData)
     {
-        // 计算RMS
-        float sumOfSquares = 0f;
-        foreach (float sample in audioData)
+        // 发送音频数据到后端
+        wsManager.Send(new AudioDataMessage
         {
-            sumOfSquares += sample * sample; // 平方和
-        }
-        float meanOfSquares = sumOfSquares / audioData.Length; // 平均值
-        float rms = Mathf.Sqrt(meanOfSquares); // 平方根
+            type = "mic-audio-data",
+            audio = audioData
+        });
+    }
 
-        return rms;
+    void SendAudioEndSignal()
+    {
+        // 发送音频结束信号
+        wsManager.Send(new WebSocketMessage
+        {
+            type = "mic-audio-end"
+        });
     }
 
     void OnDestroy()
@@ -126,4 +140,10 @@ public class AudioCapture : MonoBehaviour
             StopRecording();
         }
     }
+}
+
+// 定义音频数据消息类
+public class AudioDataMessage : WebSocketMessage
+{
+    public float[] audio;
 }
