@@ -1,6 +1,7 @@
 using UnityEngine.SceneManagement;
 using TMPro;
 using UnityEngine;
+using System.Linq;
 
 public class WebSocketController : MonoBehaviour
 {
@@ -46,6 +47,22 @@ public class WebSocketController : MonoBehaviour
         if (!string.IsNullOrEmpty(inputField.text))
         {
             var wsManager = WebSocketManager.Instance;
+            // 假设每次都打断
+            wsManager.Send(new TextMessage
+            {
+                type = "interrupt-signal",
+                text = HistoryManager.Instance.assistantLastMessage
+            });
+
+            // 停止所有AI音频播放
+            AudioMessageHandler.Instance.ClearAudioQueue();
+            AudioManager.Instance.RemoveAllAudioByType(ECS.AudioType.AssistantVoice);
+
+            var audioHandler = AudioMessageHandler.Instance;
+            
+            // 清空, 下一次继续接收
+            HistoryManager.Instance.assistantLastMessage = string.Empty;
+
             wsManager.Send(new TextMessage
             {
                 type = "text-input",

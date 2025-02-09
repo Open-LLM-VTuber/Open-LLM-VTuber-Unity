@@ -37,6 +37,8 @@ public class AudioMessageHandler : InitOnceSingleton<AudioMessageHandler>
             if (_displayText != null)
             {
                 _displayText.text = $"\nAI: {msg.text}";
+                // 记下最后的回复，用于interrupt-signal
+                HistoryManager.Instance.assistantLastMessage += msg.text;
             }
             // 创建时不要立刻播放音频
             int voiceEntity = AudioManager.Instance.CreateAudioEntityFromBase64(msg.audio, playOnCreate: false);
@@ -48,5 +50,11 @@ public class AudioMessageHandler : InitOnceSingleton<AudioMessageHandler>
                 TryPlayNext();
             });
         }
+    }
+
+    public void ClearAudioQueue()
+    {
+        audioQueue.Clear();
+        isPlaying = false;
     }
 }

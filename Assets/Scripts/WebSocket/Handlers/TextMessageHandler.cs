@@ -28,6 +28,8 @@ public class TextMessageHandler : InitOnceSingleton<TextMessageHandler>
         if (_displayText != null)
         {
             _displayText.text = $"\nAI: {textMsg.text}";
+            // 记下最后的回复，用于interrupt-signal
+            HistoryManager.Instance.assistantLastMessage += textMsg.text;
         }
         ScrollToBottom();
     }
