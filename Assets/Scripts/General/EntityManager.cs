@@ -6,23 +6,8 @@ using UnityEngine;
 namespace ECS
 {
 
-    public class EntityManager : MonoBehaviour
+    public class EntityManager : Singleton<EntityManager>
     {
-        public static EntityManager Instance { get; private set; }
-
-        void Awake()
-        {
-            if (Instance == null)
-            {
-                Instance = this;
-                DontDestroyOnLoad(gameObject);
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
-        }
-
         private int nextEntityId = 1; // 从1开始避免0的歧义
         private readonly HashSet<int> activeEntities = new HashSet<int>();
         private readonly Queue<int> recycledIds = new Queue<int>();

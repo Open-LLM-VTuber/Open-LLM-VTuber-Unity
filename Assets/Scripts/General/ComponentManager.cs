@@ -21,22 +21,8 @@ namespace ECS
 
     }
 
-    public class ComponentManager : MonoBehaviour
+    public class ComponentManager : Singleton<ComponentManager>
     {
-        public static ComponentManager Instance { get; private set; }
-
-        void Awake()
-        {
-            if (Instance == null)
-            {
-                Instance = this;
-                DontDestroyOnLoad(gameObject);
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
-        }
         private class ComponentStorage<T> where T : Component
         {
             public readonly IDictionary<int, T> components = new Dictionary<int, T>();

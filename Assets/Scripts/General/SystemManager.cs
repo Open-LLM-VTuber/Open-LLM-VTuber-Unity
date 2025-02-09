@@ -66,25 +66,11 @@ namespace ECS
             => ComponentManager.GetComponent<T>(entity);
     }
 
-    public class SystemManager : MonoBehaviour
+    public class SystemManager : Singleton<SystemManager> 
     {
         private List<System> _systems = new List<System>();
         private readonly object _lock = new object();
-        public static SystemManager Instance { get; private set; }
         public int MaxSystemsPerFrame { get; set; } = 5;
-
-        void Awake()
-        {
-            if (Instance == null)
-            {
-                Instance = this;
-                DontDestroyOnLoad(gameObject);
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
-        }
 
         public void RegisterSystem(System system)
         {

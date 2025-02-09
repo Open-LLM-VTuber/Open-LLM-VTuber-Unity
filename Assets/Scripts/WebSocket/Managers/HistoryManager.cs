@@ -1,7 +1,6 @@
-
 using UnityEngine;
 
-public class HistoryManager : MonoBehaviour
+public class HistoryManager : Singleton<HistoryManager>
 {
     private string historyUid;
     private HistoryListMessage historyList;
@@ -10,23 +9,7 @@ public class HistoryManager : MonoBehaviour
     // 历史记录更新事件
     public delegate void HistoryUpdatedHandler(HistoryDataMessage historyData);
     public event HistoryUpdatedHandler OnHistoryUpdated;
-
-    public static HistoryManager Instance { get; private set; }
     public bool initialized = false;
-
-    void Awake()
-    {
-        if (Instance == null)
-        {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
-        else
-        {
-            Debug.LogWarning("Duplicate HistoryManager instance detected. Destroying the new one.");
-            Destroy(gameObject);
-        }
-    }
 
     public void SetHistoryUid(string uid) => historyUid = uid;
 
