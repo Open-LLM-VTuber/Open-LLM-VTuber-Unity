@@ -26,6 +26,8 @@ Shader "Unlit/XDirectionGradient"
     SubShader
     {
         Tags {"Queue"="Transparent" "RenderType"="Transparent"}
+        Cull Off
+        ZWrite Off
         Blend SrcAlpha OneMinusSrcAlpha // 透明度混合
         LOD 200
         // required for UI.Mask
