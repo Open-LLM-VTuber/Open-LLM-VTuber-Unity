@@ -7,7 +7,6 @@ public static class Base64AudioClipConverter
     {
         // 将 Base64 字符串转换为字节数组
         byte[] audioBytes = Convert.FromBase64String(base64String);
-
         // 解析 WAV 文件头部
         int channels = BitConverter.ToInt16(audioBytes, 22); // 声道数
         int fileSampleRate = BitConverter.ToInt32(audioBytes, 24); // 采样率

@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 
@@ -7,6 +5,12 @@ using TMPro;
 public class TextMessageHandler : InitOnceSingleton<TextMessageHandler>
 {
     [SerializeField] private TMP_Text _displayText;
+
+    // 状态实例
+    private readonly ServerState _serverState = new ();
+
+    // 提供对状态的只读访问
+    public ServerState State => _serverState;
 
     public void Initialize(WebSocketManager wsManager, TMP_Text displayText)
     {
@@ -39,6 +43,30 @@ public class TextMessageHandler : InitOnceSingleton<TextMessageHandler>
         // 处理控制文本消息
         var textMsg = message as TextMessage;
         Debug.Log($"Control message received: {textMsg.text}");
+        if (textMsg != null)
+        {
+            if (textMsg.text == "interrupt")
+            {
+                WebSocketController.Interrupt();
+                _serverState.SetInterrupted(true);
+            }
+            else if (textMsg.text == "mic-audio-end")
+            {
+                WebSocketManager.Instance.Send(new WebSocketMessage
+                {
+                    type = "mic-audio-end"
+                });
+                _serverState.SetInterrupted(false);
+            }
+            else if (textMsg.text == "allow-unity-audio")
+            {
+                _serverState.SetAllowUnityAudio(true);
+            }
+            else if (textMsg.text == "reject-unity-audio")
+            {
+                _serverState.SetAllowUnityAudio(false);
+            }
+        }
     }
 
     private void ScrollToBottom()
