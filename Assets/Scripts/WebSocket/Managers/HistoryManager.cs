@@ -1,3 +1,4 @@
+using System.Text;
 using UnityEngine;
 
 public class HistoryManager : Singleton<HistoryManager>
