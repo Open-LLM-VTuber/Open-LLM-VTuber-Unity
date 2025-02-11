@@ -42,7 +42,6 @@ public class UIElementMobileCompat : MonoBehaviour
         }
 
         ComputeWorldScreenWidth();
-
         AdjustOnlyWidthElements();
         AdjustFullScreenWidthElements();
         AdjustSpaceBetweenElements();
