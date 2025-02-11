@@ -36,9 +36,9 @@ public class AudioMessageHandler : InitOnceSingleton<AudioMessageHandler>
 
             if (_displayText != null)
             {
-                _displayText.text = $"\nAI: {msg.text}";
+                _displayText.text = $"\nAI: {msg.display_text.text}";
                 // 记下最后的回复，用于interrupt-signal
-                HistoryManager.Instance.assistantLastMessage += msg.text;
+                HistoryManager.Instance.assistantLastMessage += msg.display_text.text;
             }
             if (!string.IsNullOrEmpty(msg.audio))
             {
