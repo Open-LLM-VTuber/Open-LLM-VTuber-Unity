@@ -10,6 +10,7 @@ public class UIElementOnlyWidth
 {
     public Transform element; // UI 元素
     public float originalScreenWidth = 1080; // 原始屏幕宽度
+    // public float originalTotalSpacingWidth = 0; // 原始间隙和
     public float originalItemWidth; // 原始组件宽度
 }
 
@@ -37,7 +38,6 @@ public class UIElementFontSize
 public class UIElementIconSize
 {
     public Transform element; // UI 元素
-    public float iconScaleFactor; // 缩放因子
 }
 
 public class UIElementMobileCompat : MonoBehaviour
@@ -59,11 +59,11 @@ public class UIElementMobileCompat : MonoBehaviour
         }
 
         ComputeWorldScreenWidth();
-        AdjustOnlyWidthElements();
+        AdjustIconSizeElements();
         AdjustFullScreenWidthElements();
+        AdjustOnlyWidthElements();
         AdjustSpaceBetweenElements();
         AdjustFontSizeElements();
-        AdjustIconSizeElements();
     }
 
     private void ComputeWorldScreenWidth()
@@ -169,7 +169,7 @@ public class UIElementMobileCompat : MonoBehaviour
     /// </summary>
     private void AdjustFontSizeElements()
     {
-        float scaleFactor = CalculateScaleFactor(0.5f);
+        float scaleFactor = CalculateScaleFactor(0.3f);
 
         foreach (var elementData in fontSize)
         {
@@ -203,7 +203,8 @@ public class UIElementMobileCompat : MonoBehaviour
         foreach (var elementData in iconSize)
         {
             if (elementData.element == null) continue;
-            float scaleFactor = CalculateScaleFactor(elementData.iconScaleFactor);
+            float iconScaleFactor = 0.2f; //缩放因子
+            float scaleFactor = CalculateScaleFactor(iconScaleFactor);
 
             RectTransform rt = elementData.element.GetComponent<RectTransform>();
             if (rt != null)
@@ -216,4 +217,5 @@ public class UIElementMobileCompat : MonoBehaviour
             }
         }
     }
+
 }
