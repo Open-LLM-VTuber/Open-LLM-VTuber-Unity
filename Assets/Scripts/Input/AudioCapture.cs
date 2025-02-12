@@ -54,12 +54,12 @@ public class AudioCapture : MonoBehaviour
         else
         {
             // 开始录制
-            StartCoroutine(StartRecording());
+            StartRecording();
             recordButton.image.color = activeColor; // 切换为激活颜色
         }
     }
 
-    IEnumerator StartRecording()
+    void StartRecording()
     {
         if (Microphone.devices.Length > 0)
         {
@@ -69,10 +69,8 @@ public class AudioCapture : MonoBehaviour
             Debug.Log("Recording started with device: " + selectedDevice);
             WebSocketController.Interrupt();
 
-            // 通知服务器开启VAD
-            yield return StartCoroutine(StartAudioData());
             // 启动协程处理音频块
-            yield return StartCoroutine(ProcessAudioBlocks());
+            StartCoroutine(ProcessAudioBlocks());
         }
         else
         {
@@ -80,19 +78,13 @@ public class AudioCapture : MonoBehaviour
         }
     }
 
-    void StopRecording(bool forceStop = false)
+    void StopRecording()
     {
         if (isRecording)
         {
             Microphone.End(selectedDevice);
             isRecording = false;
             Debug.Log("Recording stopped.");
-
-            if (!forceStop)
-            {
-                // 发送音频结束信号
-                StartCoroutine(EndAudioData());
-            }
         }
     }
 
@@ -121,30 +113,6 @@ public class AudioCapture : MonoBehaviour
 
     }
 
-    IEnumerator StartAudioData()
-    {
-        wsManager.Send(new AudioDataMessage
-        {
-            type = "unity-audio-data",
-            action = "start",
-            audio = new float[1]
-        });
-
-        int missCount = 0;
-        while (false == TextMessageHandler.Instance.State.AllowUnityAudio)
-        {
-            if (missCount >= 100)
-            {
-                Debug.LogWarning("Cannot activate VAD on server side.");
-                break;
-            }
-            yield return new WaitForSeconds(0.1f);
-            missCount++;
-        }
-        Debug.Log("StartAudioData");
-
-    }
-
     void SendAudioData(float[] audioData)
     {
         // 发送音频数据到后端
@@ -156,35 +124,12 @@ public class AudioCapture : MonoBehaviour
         });
     }
 
-    IEnumerator EndAudioData()
-    {
-        wsManager.Send(new AudioDataMessage
-        {
-            type = "unity-audio-data",
-            action = "end",
-            audio = new float[1]
-        });
-        int missCount = 0;
-        while (true == TextMessageHandler.Instance.State.AllowUnityAudio)
-        {
-            if (missCount >= 100)
-            {
-                Debug.LogWarning("Cannot deactivate VAD on server side.");
-                break;
-            }
-            yield return new WaitForSeconds(0.1f);
-            missCount++;
-        }
-        Debug.Log("EndAudioData");
-    }
-
-
     void OnDestroy()
     {
         // 停止录制
         if (isRecording)
         {
-            StopRecording(forceStop: true);
+            StopRecording();
         }
     }
 }
