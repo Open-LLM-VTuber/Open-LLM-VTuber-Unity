@@ -56,6 +56,8 @@ public class UIElementMobileCompat : MonoBehaviour
     public List<UIElementAdjustSize> adjustSize = new List<UIElementAdjustSize>(); // 图片, Inspector 可配置
 
     private float worldScreenWidth;
+    private float referenceScreenWidth = 1080f;
+    private float referenceScreenHeight = 2408f;
 
     void Start()
     {
@@ -78,6 +80,7 @@ public class UIElementMobileCompat : MonoBehaviour
     {
         float screenWidth = Screen.width;
         float screenHeight = Screen.height;
+        Debug.Log("screenWidth is "+ screenWidth + "screenHeight is " + screenHeight);
         float worldScreenHeight = Camera.main.orthographicSize * 2.0f;
         worldScreenWidth = worldScreenHeight * (screenWidth / screenHeight);
     }
@@ -186,7 +189,9 @@ public class UIElementMobileCompat : MonoBehaviour
     {
         if (element == null) return;
 
-        // **特判：如果是滑动条（Scrollbar 或其子组件），则不调整大小**
+        Debug.Log($"Adjusting: {element.name}");
+
+        // **特判：如果是滑动条（Scrollbar 或其子组件，或者背景图片），则不调整大小**
         if (IsExcludedElement(element))
         {
             Debug.Log($"Skipping resizing for {element.name}");
@@ -197,10 +202,10 @@ public class UIElementMobileCompat : MonoBehaviour
         float textScale = CalculateScaleFactor(fontScaleFactor);
         float iconScale = CalculateScaleFactor(iconScaleFactor);
 
-        // 处理 Live2D 模型
+        // TODO:处理 Live2D 模型
         if (IsLive2DModel(element))
         {
-            AdjustLive2DModelSize(element, iconScale);
+            AdjustLive2DModelSizeAndPosition(element, iconScale);
         }
         else
         {
@@ -235,9 +240,6 @@ public class UIElementMobileCompat : MonoBehaviour
     /// </summary>
     private float CalculateScaleFactor(float scaleFactorMultiplier = 0.5f)
     {
-        float referenceScreenWidth = 1080f;
-        float referenceScreenHeight = 2408f;
-
         float widthFactor = Screen.width / referenceScreenWidth;
         float heightFactor = Screen.height / referenceScreenHeight;
 
@@ -308,6 +310,8 @@ public class UIElementMobileCompat : MonoBehaviour
         }
     }
 
+    //TODO:Live2D位置与大小
+
     /// <summary>
     /// 判断是否是 Live2D 模型（根据 GameObject 名称或组件）
     /// </summary>
@@ -318,12 +322,12 @@ public class UIElementMobileCompat : MonoBehaviour
     }
 
     /// <summary>
-    /// 调整 Live2D 模型的大小（通过 Transform.localScale）
+    /// 调整 Live2D 模型的大小和位置
     /// </summary>
-    private void AdjustLive2DModelSize(Transform model, float iconScale)
+    private void AdjustLive2DModelSizeAndPosition(Transform model, float iconScale)
     {
+        // **调整 Live2D 的缩放**
         model.localScale *= iconScale;
-        Debug.Log($"Resizing Live2D model: {model.name} to {model.localScale}");
     }
     #endregion
 }
