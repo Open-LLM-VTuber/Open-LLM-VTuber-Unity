@@ -172,33 +172,34 @@ public class UIElementMobileCompat : MonoBehaviour
             return;
         }
 
-        float fontScaleFactor = 0.3f; // 文字缩放因子
-        float iconScaleFactor = 0.3f; // 图标缩放因子
+        float fontScaleFactor = 0.2f; // 文字缩放因子
+        float iconScaleFactor = 0.2f; // 图标缩放因子
+        float live2dScaleFactor = 0.1f; // live2d缩放因子
 
         foreach (var elementData in adjustSize)
         {
             if (elementData.element != null)
             {
-                AdjustUIElementRecursive(elementData.element, fontScaleFactor, iconScaleFactor);
+                AdjustUIElementRecursive(elementData.element, fontScaleFactor, iconScaleFactor, live2dScaleFactor);
             }
         }
     }
 
     #region 
-    private void AdjustUIElementRecursive(Transform element, float fontScaleFactor, float iconScaleFactor)
+
+    private void AdjustUIElementRecursive(Transform element, float fontScaleFactor, float iconScaleFactor, float live2dScaleFactor)
     {
         if (element == null) return;
-
-        //Debug.Log($"Adjusting: {element.name}");
 
         // 计算缩放因子
         float textScale = CalculateScaleFactor(fontScaleFactor);
         float iconScale = CalculateScaleFactor(iconScaleFactor);
+        float live2dScale = CalculateScaleFactor(live2dScaleFactor);
 
         // 处理 Live2D 模型
         if (IsLive2DModel(element))
         {
-            AdjustLive2DModelSizeAndPosition(element, iconScale);
+            AdjustLive2DModelSizeAndPosition(element, live2dScale);
         }
         else
         {
@@ -215,7 +216,7 @@ public class UIElementMobileCompat : MonoBehaviour
         // 递归处理所有子对象
         foreach (Transform child in element)
         {
-            AdjustUIElementRecursive(child, fontScaleFactor, iconScaleFactor);
+            AdjustUIElementRecursive(child, fontScaleFactor, iconScaleFactor,live2dScale);
         }
     }
 
@@ -256,7 +257,15 @@ public class UIElementMobileCompat : MonoBehaviour
         RectTransform rt = element.GetComponent<RectTransform>();
         if (rt != null)
         {
-            rt.sizeDelta = new Vector2(rt.sizeDelta.x * iconScale, rt.sizeDelta.y * iconScale);
+            //特殊处理
+            if (element.name == "Settings Side Panel")
+            {
+                rt.sizeDelta = new Vector2(rt.sizeDelta.x * iconScale, rt.sizeDelta.y);
+            }
+            //普遍情况
+            else{
+                rt.sizeDelta = new Vector2(rt.sizeDelta.x * iconScale, rt.sizeDelta.y * iconScale);
+            }
             rt.anchoredPosition = new Vector2(rt.anchoredPosition.x * iconScale, rt.anchoredPosition.y * iconScale);
         }
     }
@@ -311,5 +320,6 @@ public class UIElementMobileCompat : MonoBehaviour
         // **调整 Live2D 的缩放**
         model.localScale *= iconScale;
     }
+
     #endregion
 }
