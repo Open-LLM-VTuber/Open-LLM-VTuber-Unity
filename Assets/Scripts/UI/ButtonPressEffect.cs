@@ -41,6 +41,9 @@ public class ButtonPressEffect : MonoBehaviour, IPointerDownHandler, IPointerUpH
     // 当按钮被按下时调用
     public void OnPointerDown(PointerEventData eventData)
     {
+        // **更新按钮的当前位置信息**
+        originalLocalPosition = transform.localPosition;
+
         // 停止之前的动画
         if (pressSequence != null && pressSequence.IsActive())
         {
