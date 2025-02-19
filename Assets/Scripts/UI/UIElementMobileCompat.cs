@@ -4,14 +4,25 @@ using System.Collections.Generic;
 using UnityEngine.UI;
 using TMPro;
 
-
 [System.Serializable]
 public class UIElementOnlyWidth
 {
-    public Transform element; // UI 元素
-    public float originalScreenWidth = 1080; // 原始屏幕宽度
-    // public float originalTotalSpacingWidth = 0; // 原始间隙和
-    public float originalItemWidth; // 原始组件宽度
+    public Transform element;
+    public LayoutOption layoutOption = LayoutOption.Vertical;
+
+    [Tooltip("仅当 LayoutOption 为 Vertical 时有效")]
+    public float OriginalItemWidth; // 仅当 Vertical 时使用
+
+    [Tooltip("仅当 LayoutOption 为 Horizontal 时有效")]
+    public float Spacing; // 仅当 Horizontal 时使用
+}
+
+
+
+public enum LayoutOption
+{
+    Vertical,
+    Horizontal
 }
 
 [System.Serializable]
@@ -24,7 +35,7 @@ public class UIElementFullScreenWidth
 public class UIElementSpaceBetween
 {
     public Transform element; // UI 元素
-    public float originalScreenWidth = 1080; // 原始屏幕宽度
+   // public float originalScreenWidth = 1080; // 原始屏幕宽度
     public float originalItemWidth; // 原始组件的宽度
 }
 
@@ -84,7 +95,6 @@ public class UIElementMobileCompat : MonoBehaviour
         float worldScreenHeight = Camera.main.orthographicSize * 2.0f;
         worldScreenWidth = worldScreenHeight * (screenWidth / screenHeight);
     }
-
     private void AdjustOnlyWidthElements()
     {
         foreach (var elementData in onlyWidth)
@@ -99,7 +109,41 @@ public class UIElementMobileCompat : MonoBehaviour
                 continue;
             }
 
-            rt.sizeDelta = new Vector2(worldScreenWidth - (elementData.originalScreenWidth - elementData.originalItemWidth), rt.sizeDelta.y);
+            if (elementData.layoutOption == LayoutOption.Vertical)
+            {
+                rt.sizeDelta = new Vector2(worldScreenWidth - (referenceScreenWidth - elementData.OriginalItemWidth), rt.sizeDelta.y);               
+            }
+            else
+            {
+                RectTransform parentRt = rt.parent as RectTransform;
+                if (parentRt == null)
+                {
+                    Debug.LogWarning($"{element.name} does not have a valid parent RectTransform.");
+                    continue;
+                }
+
+                // 计算同级组件的总宽度（排除自身）
+                float totalSiblingWidth = 0;
+                foreach (Transform sibling in parentRt)
+                {
+                    if (sibling == rt.transform) continue; // ✅ 确保排除自身
+
+                    RectTransform siblingRt = sibling.GetComponent<RectTransform>();
+                    if (siblingRt != null)
+                    {
+                        totalSiblingWidth += siblingRt.sizeDelta.x; // ✅ 使用 sizeDelta 而不是 rect.width
+                    }
+                }
+
+                // 计算剩余可用宽度
+                float parentWidth = parentRt.rect.width; // ✅ 使用 rect.width 作为父级宽度
+                float availableWidth = parentWidth - totalSiblingWidth - elementData.Spacing;
+
+                if (availableWidth < 0) availableWidth = 0; // 避免负值
+
+                // 设置新宽度
+                rt.sizeDelta = new Vector2(availableWidth, rt.sizeDelta.y);
+            }
         }
     }
 
@@ -136,7 +180,7 @@ public class UIElementMobileCompat : MonoBehaviour
                 continue;
             }
 
-            rt.sizeDelta = new Vector2(worldScreenWidth - (elementData.originalScreenWidth - elementData.originalItemWidth), rt.sizeDelta.y);
+            rt.sizeDelta = new Vector2(worldScreenWidth - (referenceScreenWidth - elementData.originalItemWidth), rt.sizeDelta.y);
 
             HorizontalLayoutGroup layoutGroup = element.GetComponent<HorizontalLayoutGroup>();
             if (layoutGroup != null)
@@ -147,7 +191,7 @@ public class UIElementMobileCompat : MonoBehaviour
 
                 if (buttonCount > 1)
                 {
-                    layoutGroup.spacing = (worldScreenWidth - (elementData.originalScreenWidth - elementData.originalItemWidth) - totalButtonWidth) / (buttonCount - 1);
+                    layoutGroup.spacing = (worldScreenWidth - (referenceScreenWidth - elementData.originalItemWidth) - totalButtonWidth) / (buttonCount - 1);
                 }
                 else
                 {
@@ -161,6 +205,7 @@ public class UIElementMobileCompat : MonoBehaviour
         }
     }
 
+    
     /// <summary>
     /// 统一调整 UI 组件的大小（自动遍历 `adjustSize`）
     /// </summary>
@@ -327,4 +372,7 @@ public class UIElementMobileCompat : MonoBehaviour
     }
 
     #endregion
+
 }
+
+
