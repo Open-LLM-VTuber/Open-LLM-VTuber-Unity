@@ -257,8 +257,13 @@ public class UIElementMobileCompat : MonoBehaviour
         RectTransform rt = element.GetComponent<RectTransform>();
         if (rt != null)
         {
-            //特殊处理
-            if (element.name == "Settings Side Panel")
+            //滚动条组件，特殊处理
+            List<string> scrollParentNames = new List<string>
+            {
+                "Settings Side Panel"
+            };
+
+            if (scrollParentNames.Contains(element.name))
             {
                 rt.sizeDelta = new Vector2(rt.sizeDelta.x * iconScale, rt.sizeDelta.y);
             }
