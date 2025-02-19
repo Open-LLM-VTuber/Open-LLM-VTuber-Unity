@@ -12,7 +12,7 @@ public class TextMessageHandler : InitOnceSingleton<TextMessageHandler>
     // 提供对状态的只读访问
     public ServerState State => _serverState;
 
-    public void Initialize(WebSocketManager wsManager, TMP_Text displayText)
+    public void Initialize(WebSocketManager wsManager, GameObject dialogPanel)
     {
         InitOnce(() =>
         {
@@ -20,10 +20,8 @@ public class TextMessageHandler : InitOnceSingleton<TextMessageHandler>
             wsManager.RegisterHandler("control", HandleControlText);
         });
         
-        if (displayText != null)
-        {
-            _displayText = displayText;
-        }
+        _displayText = dialogPanel.transform.Find("Content")?.GetComponent<TMP_Text>();
+        
     }
 
     private void HandleFullText(WebSocketMessage message)

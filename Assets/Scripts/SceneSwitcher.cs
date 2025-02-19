@@ -1,27 +1,24 @@
+using UnityEngine.Events;
 using UnityEngine;
-using UnityEngine.SceneManagement; // 引入场景管理命名空间
 
 public class SceneSwitcher : MonoBehaviour
 {
     [SerializeField] private string sceneName;
-    [SerializeField] private bool isSplash = false;
+    [SerializeField] private TransitionConfig transitionConfig;
 
-    private void Awake()
+    [Header("Events")]
+    public UnityEvent OnPreSceneLoad;
+    public UnityEvent OnPostSceneLoad;
+
+    public void TriggerSceneSwitch()
     {
-        // 保存目标场景名称
-        PlayerPrefs.SetString("TargetScene", sceneName);
+        PlayerPrefs.SetString("CurrentScene", sceneName);
         PlayerPrefs.Save();
-    }
-    public void SwitchToScene()
-    {
-        if (isSplash)
-        {
-            // 加载 LoadingScene
-            SceneManager.LoadScene("LoadingScene");
-        }
-        else
-        {
-            SceneManager.LoadScene(sceneName);
-        }
+        SceneTransitionManager.Instance.SwitchScene(
+            sceneName,
+            transitionConfig,
+            OnPreSceneLoad.Invoke,
+            OnPostSceneLoad.Invoke
+        );
     }
 }

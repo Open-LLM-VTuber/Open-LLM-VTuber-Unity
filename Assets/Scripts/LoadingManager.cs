@@ -5,6 +5,9 @@ using System.Collections;
 using TMPro;
 public class LoadingManager : MonoBehaviour
 {
+
+    public string targetScene;
+
     [Header("UI References")]
     public Slider progressBar; // 进度条
     public TMP_Text progressText;  // 百分比文本
@@ -15,8 +18,6 @@ public class LoadingManager : MonoBehaviour
 
     void Start()
     {
-        // 开始加载目标场景
-        string targetScene = PlayerPrefs.GetString("TargetScene"); // 从 PlayerPrefs 获取目标场景名称
         if (!string.IsNullOrEmpty(targetScene))
         {
             StartCoroutine(LoadSceneAsync(targetScene));

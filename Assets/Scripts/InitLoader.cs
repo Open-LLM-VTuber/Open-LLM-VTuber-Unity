@@ -3,6 +3,7 @@ using UnityEngine;
 
 public class InitLoader : MonoBehaviour
 {
+
     void Start()
     {
         // 检查是否已经存在 Global Settings 实例
@@ -21,6 +22,7 @@ public class InitLoader : MonoBehaviour
             globalManagers.AddComponent<HistoryManager>();
             globalManagers.AddComponent<AudioManager>();
             globalManagers.AddComponent<WebSocketManager>();
+            globalManagers.AddComponent<SceneTransitionManager>();
 
             GameObject globalHandlers = new GameObject("Global Handlers");
             globalHandlers.AddComponent<TextMessageHandler>();

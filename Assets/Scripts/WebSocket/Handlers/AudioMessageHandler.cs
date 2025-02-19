@@ -7,17 +7,20 @@ public class AudioMessageHandler : InitOnceSingleton<AudioMessageHandler>
 {
     [SerializeField] private TMP_Text _displayText;
 
+    private GameObject _dialogPanel;
     private Queue<AudioMessage> audioQueue = new Queue<AudioMessage>();
     private bool isPlaying;
 
-    public void Initialize(WebSocketManager wsManager, TMP_Text displayText)
+    public void Initialize(WebSocketManager wsManager, GameObject dialogPanel)
     {
         InitOnce(() =>
         {
             wsManager.RegisterHandler("audio", HandleAudioMessage);
         });
-        
-        _displayText = displayText;
+
+        _displayText = dialogPanel.transform.Find("FrostedGlass/Content")?.GetComponent<TMP_Text>();
+        _dialogPanel = dialogPanel;
+        _dialogPanel.SetActive(false);
     }
 
     private void HandleAudioMessage(WebSocketMessage message)
@@ -31,6 +34,7 @@ public class AudioMessageHandler : InitOnceSingleton<AudioMessageHandler>
     {
         if (!isPlaying && audioQueue.Count > 0)
         {
+            _dialogPanel.SetActive(true);
             isPlaying = true;
             var msg = audioQueue.Dequeue();
 
@@ -47,6 +51,7 @@ public class AudioMessageHandler : InitOnceSingleton<AudioMessageHandler>
                 // 用管理器播放音频，并在播放完成后处理下一条消息
                 AudioManager.Instance.PlayAudio(voiceEntity, () =>
                 {
+                    _dialogPanel.SetActive(false);
                     isPlaying = false;
                     AudioManager.Instance.RemoveAudio(voiceEntity);
                     TryPlayNext();

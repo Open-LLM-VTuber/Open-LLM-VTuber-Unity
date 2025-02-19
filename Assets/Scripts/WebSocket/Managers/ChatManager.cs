@@ -1,5 +1,6 @@
 using UnityEngine;
 using Newtonsoft.Json;
+using UnityEditor.VersionControl;
 
 public class ChatManager : MonoBehaviour
 {
@@ -58,6 +59,18 @@ public class ChatManager : MonoBehaviour
             GameObject prefab = message.role == "human" ? chatBubbleRight : chatBubbleLeft;
             GameObject chatObject = Instantiate(prefab, parentObject);
             chatObject.GetComponent<ChatContent>().SetContent(message.content);
+        }
+
+        var count = historyMessages.messages.Count;
+        if (count > 0)
+        {
+            var lastMsg = historyMessages.messages[count - 1];
+            if (lastMsg.role == "human")
+            {
+                GameObject chatObject = Instantiate(chatBubbleLeft, parentObject);
+                var content = HistoryManager.Instance.assistantLastMessage;
+                chatObject.GetComponent<ChatContent>().SetContent(content);
+            }
         }
         Canvas.ForceUpdateCanvases();
     }
