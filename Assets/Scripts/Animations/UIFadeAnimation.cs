@@ -8,7 +8,7 @@ public class FadeInOutAnimation : MonoBehaviour
     public Ease easeType = Ease.OutQuad; // 缓动类型
     private bool isFaded = false;
 
-    void Start()
+    void Awake()
     {
         // 初始化时设置 CanvasGroup 的 alpha 值
         canvasGroup.alpha = isFaded ? 0 : 1;

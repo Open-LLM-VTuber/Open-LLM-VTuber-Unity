@@ -1,6 +1,5 @@
 using UnityEngine;
 using Newtonsoft.Json;
-using UnityEditor.VersionControl;
 
 public class ChatManager : MonoBehaviour
 {

@@ -20,7 +20,7 @@ public class TextMessageHandler : InitOnceSingleton<TextMessageHandler>
             wsManager.RegisterHandler("control", HandleControlText);
         });
         
-        _displayText = dialogPanel.transform.Find("Content")?.GetComponent<TMP_Text>();
+        _displayText = dialogPanel.transform.Find("FrostedGlass/Content")?.GetComponent<TMP_Text>();
         
     }
 

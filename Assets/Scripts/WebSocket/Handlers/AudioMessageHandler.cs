@@ -26,6 +26,8 @@ public class AudioMessageHandler : InitOnceSingleton<AudioMessageHandler>
     private void HandleAudioMessage(WebSocketMessage message)
     {
         var audioMsg = message as AudioMessage;
+        Debug.Log("audioMsg.avatar: " + audioMsg.display_text.avatar);
+        Debug.Log("audioMsg.name: " + audioMsg.display_text.name);
         audioQueue.Enqueue(audioMsg);
         TryPlayNext();
     }
