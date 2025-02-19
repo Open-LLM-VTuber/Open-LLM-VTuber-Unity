@@ -118,7 +118,7 @@ public class AudioCapture : MonoBehaviour
         // 发送音频数据到后端
         wsManager.Send(new AudioDataMessage
         {
-            type = "unity-audio-data",
+            type = "raw-audio-data",
             action = "data",
             audio = audioData
         });
