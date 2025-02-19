@@ -68,8 +68,8 @@ public class UIElementMobileCompat : MonoBehaviour
         }
 
         ComputeWorldScreenWidth();
-        AdjustFullScreenWidthElements();
         AdjustUIElementsSize();
+        AdjustFullScreenWidthElements();
         // AdjustIconSizeElements();
         // AdjustFontSizeElements();
         AdjustOnlyWidthElements();
@@ -80,7 +80,7 @@ public class UIElementMobileCompat : MonoBehaviour
     {
         float screenWidth = Screen.width;
         float screenHeight = Screen.height;
-        Debug.Log("screenWidth is "+ screenWidth + "screenHeight is " + screenHeight);
+        //Debug.Log("screenWidth is "+ screenWidth + "screenHeight is " + screenHeight);
         float worldScreenHeight = Camera.main.orthographicSize * 2.0f;
         worldScreenWidth = worldScreenHeight * (screenWidth / screenHeight);
     }
@@ -172,40 +172,34 @@ public class UIElementMobileCompat : MonoBehaviour
             return;
         }
 
-        float fontScaleFactor = 0.3f; // 文字缩放因子
+        float fontScaleFactor = 0.2f; // 文字缩放因子
         float iconScaleFactor = 0.2f; // 图标缩放因子
+        float live2dScaleFactor = 0.1f; // live2d缩放因子
 
         foreach (var elementData in adjustSize)
         {
             if (elementData.element != null)
             {
-                AdjustUIElementRecursive(elementData.element, fontScaleFactor, iconScaleFactor);
+                AdjustUIElementRecursive(elementData.element, fontScaleFactor, iconScaleFactor, live2dScaleFactor);
             }
         }
     }
 
     #region 
-    private void AdjustUIElementRecursive(Transform element, float fontScaleFactor, float iconScaleFactor)
+
+    private void AdjustUIElementRecursive(Transform element, float fontScaleFactor, float iconScaleFactor, float live2dScaleFactor)
     {
         if (element == null) return;
-
-        Debug.Log($"Adjusting: {element.name}");
-
-        // **特判：如果是滑动条（Scrollbar 或其子组件，或者背景图片），则不调整大小**
-        if (IsExcludedElement(element))
-        {
-            Debug.Log($"Skipping resizing for {element.name}");
-            return;
-        }
 
         // 计算缩放因子
         float textScale = CalculateScaleFactor(fontScaleFactor);
         float iconScale = CalculateScaleFactor(iconScaleFactor);
+        float live2dScale = CalculateScaleFactor(live2dScaleFactor);
 
-        // TODO:处理 Live2D 模型
+        // 处理 Live2D 模型
         if (IsLive2DModel(element))
         {
-            AdjustLive2DModelSizeAndPosition(element, iconScale);
+            AdjustLive2DModelSizeAndPosition(element, live2dScale);
         }
         else
         {
@@ -222,17 +216,8 @@ public class UIElementMobileCompat : MonoBehaviour
         // 递归处理所有子对象
         foreach (Transform child in element)
         {
-            AdjustUIElementRecursive(child, fontScaleFactor, iconScaleFactor);
+            AdjustUIElementRecursive(child, fontScaleFactor, iconScaleFactor,live2dScale);
         }
-    }
-
-    /// <summary>
-    /// 判断是否需要跳过该 UI 元素（如 Scrollbar 及其子组件）
-    /// </summary>
-    private bool IsExcludedElement(Transform element)
-    {
-        string name = element.name.ToLower();
-        return name.Contains("scrollbar") || name.Contains("sliding area") || name.Contains("handle");
     }
 
     /// <summary>
@@ -272,7 +257,20 @@ public class UIElementMobileCompat : MonoBehaviour
         RectTransform rt = element.GetComponent<RectTransform>();
         if (rt != null)
         {
-            rt.sizeDelta = new Vector2(rt.sizeDelta.x * iconScale, rt.sizeDelta.y * iconScale);
+            //滚动条组件，特殊处理
+            List<string> scrollParentNames = new List<string>
+            {
+                "Settings Side Panel"
+            };
+
+            if (scrollParentNames.Contains(element.name))
+            {
+                rt.sizeDelta = new Vector2(rt.sizeDelta.x * iconScale, rt.sizeDelta.y);
+            }
+            //普遍情况
+            else{
+                rt.sizeDelta = new Vector2(rt.sizeDelta.x * iconScale, rt.sizeDelta.y * iconScale);
+            }
             rt.anchoredPosition = new Vector2(rt.anchoredPosition.x * iconScale, rt.anchoredPosition.y * iconScale);
         }
     }
@@ -310,8 +308,6 @@ public class UIElementMobileCompat : MonoBehaviour
         }
     }
 
-    //TODO:Live2D位置与大小
-
     /// <summary>
     /// 判断是否是 Live2D 模型（根据 GameObject 名称或组件）
     /// </summary>
@@ -329,5 +325,6 @@ public class UIElementMobileCompat : MonoBehaviour
         // **调整 Live2D 的缩放**
         model.localScale *= iconScale;
     }
+
     #endregion
 }
