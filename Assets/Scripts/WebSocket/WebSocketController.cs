@@ -37,11 +37,12 @@ public class WebSocketController : MonoBehaviour
 
     public static void Interrupt()
     {
+        var lastMsg = HistoryManager.Instance.assistantLastMessage;
         // 假设每次都打断
         WebSocketManager.Instance.Send(new TextMessage
         {
             type = "interrupt-signal",
-            text = HistoryManager.Instance.assistantLastMessage
+            text = lastMsg.content
         });
 
         // 停止所有AI音频播放
@@ -49,7 +50,7 @@ public class WebSocketController : MonoBehaviour
         AudioManager.Instance.RemoveAllAudioByType(ECS.AudioType.AssistantVoice);
 
         // 清空, 下一次继续接收
-        HistoryManager.Instance.assistantLastMessage = string.Empty;
+        lastMsg.content = string.Empty;
     }
 
     public void OnSendButtonClicked()

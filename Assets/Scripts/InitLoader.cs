@@ -30,10 +30,14 @@ public class InitLoader : MonoBehaviour
             globalHandlers.AddComponent<HistoryMessageHandler>();
             globalHandlers.AddComponent<ConfigMessageHandler>();
 
+            GameObject networkController = new GameObject("Network Controller");
+            networkController.AddComponent<HttpDownloader>();
+
             // 设置为 DontDestroyOnLoad
             DontDestroyOnLoad(globalSettings);
             DontDestroyOnLoad(globalManagers);
             DontDestroyOnLoad(globalHandlers);
+            DontDestroyOnLoad(networkController);
         }
         else
         {

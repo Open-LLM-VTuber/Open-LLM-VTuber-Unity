@@ -155,6 +155,7 @@ public class OpenOptionsWindow : MonoBehaviour
         popupWindowScript.introString = introString;
         popupWindowScript.Setup();
     }
+
     // 实例化完成回调
     private void OnOptionsWindowSpawned(GameObject optionsWindow)
     {

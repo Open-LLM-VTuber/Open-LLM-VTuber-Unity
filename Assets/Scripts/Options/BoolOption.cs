@@ -13,7 +13,7 @@ public class BoolOption : MonoBehaviour
         _drawerAnimator = GetComponent<DrawerAnimation>();
         _colorAnimator = GetComponent<ColorAnimation>();
         // 从 SettingsManager 获取当前设置值
-        Debug.Log($"BoolOption: {settingKey}");
+        //Debug.Log($"BoolOption: {settingKey}");
         string settingValue = SettingsManager.Instance.GetSetting(settingKey);
         if (bool.TryParse(settingValue, out _currentState))
         {

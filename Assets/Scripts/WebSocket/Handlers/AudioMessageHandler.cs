@@ -18,16 +18,17 @@ public class AudioMessageHandler : InitOnceSingleton<AudioMessageHandler>
             wsManager.RegisterHandler("audio", HandleAudioMessage);
         });
 
-        _displayText = dialogPanel.transform.Find("FrostedGlass/Content")?.GetComponent<TMP_Text>();
-        _dialogPanel = dialogPanel;
-        _dialogPanel.SetActive(false);
+        if (dialogPanel != null)
+        {
+            _displayText = dialogPanel.transform.Find("FrostedGlass/Content")?.GetComponent<TMP_Text>();
+            _dialogPanel = dialogPanel;
+            _dialogPanel.SetActive(false);
+        }
     }
 
     private void HandleAudioMessage(WebSocketMessage message)
     {
         var audioMsg = message as AudioMessage;
-        Debug.Log("audioMsg.avatar: " + audioMsg.display_text.avatar);
-        Debug.Log("audioMsg.name: " + audioMsg.display_text.name);
         audioQueue.Enqueue(audioMsg);
         TryPlayNext();
     }
@@ -36,16 +37,25 @@ public class AudioMessageHandler : InitOnceSingleton<AudioMessageHandler>
     {
         if (!isPlaying && audioQueue.Count > 0)
         {
-            _dialogPanel.SetActive(true);
+            if (_dialogPanel != null)
+            {
+                _dialogPanel.SetActive(true);
+            }
+            
             isPlaying = true;
             var msg = audioQueue.Dequeue();
 
             if (_displayText != null)
             {
                 _displayText.text = $"\nAI: {msg.display_text.text}";
-                // 记下最后的回复，用于interrupt-signal
-                HistoryManager.Instance.assistantLastMessage += msg.display_text.text;
             }
+
+            // 记下最后的回复，用于interrupt-signal
+            var lastMsg = HistoryManager.Instance.assistantLastMessage;
+            lastMsg.content += msg.display_text.text;
+            lastMsg.avatar = msg.display_text.avatar;
+            lastMsg.name = msg.display_text.name;
+
             if (!string.IsNullOrEmpty(msg.audio))
             {
                 // 创建时不要立刻播放音频
@@ -53,7 +63,10 @@ public class AudioMessageHandler : InitOnceSingleton<AudioMessageHandler>
                 // 用管理器播放音频，并在播放完成后处理下一条消息
                 AudioManager.Instance.PlayAudio(voiceEntity, () =>
                 {
-                    _dialogPanel.SetActive(false);
+                    if (_dialogPanel != null)
+                    {
+                        _dialogPanel.SetActive(false);
+                    }
                     isPlaying = false;
                     AudioManager.Instance.RemoveAudio(voiceEntity);
                     TryPlayNext();
