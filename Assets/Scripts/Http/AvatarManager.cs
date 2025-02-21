@@ -7,7 +7,8 @@ using System.Collections;
 public class AvatarManager : MonoBehaviour
 {
     public Image avatarImage; // 在 Inspector 中绑定的 Image 组件
-
+    public int width = 128;
+    public int height = 128;
     // 静态字典，存储人名和对应的 URL
     private static Dictionary<string, string> avatarUrls = new Dictionary<string, string>();
 
@@ -95,7 +96,7 @@ public class AvatarManager : MonoBehaviour
             yield break;
         }
 
-        Texture2D resizedTexture = ResizeTexture(texture, 128, 128);
+        Texture2D resizedTexture = ResizeTexture(texture, width, height);
         Sprite sprite = TextureToSprite(resizedTexture);
         avatarImage.sprite = sprite;
     }

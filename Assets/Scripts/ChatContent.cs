@@ -43,10 +43,10 @@ public class ChatContent : MonoBehaviour
         {
             contentText.text = content;
 
-            float textWidth = contentText.preferredWidth;
-
             if (contentSizeFitter != null)
             {
+                float textWidth = contentText.preferredWidth;
+
                 if (textWidth <= maxWidth)
                 {
                     contentSizeFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;

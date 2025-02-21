@@ -1,11 +1,10 @@
 using UnityEngine;
 using Newtonsoft.Json;
 using System;
-using UnityEditor.VersionControl;
 using System.Collections.Generic;
 using System.Linq;
 
-public class ChatManager : MonoBehaviour
+public class ChatUIManager : MonoBehaviour
 {
     public GameObject chatBubbleRight; // 人类聊天预制体
     public GameObject chatBubbleLeft;    // AI聊天预制体
@@ -17,8 +16,9 @@ public class ChatManager : MonoBehaviour
         // 订阅历史记录更新事件
         if (HistoryManager.Instance != null)
         {
-            HistoryManager.Instance.OnHistoryUpdated += HandleHistoryUpdated;
+            HistoryManager.Instance.OnHistoryDataUpdated += HandleHistoryDataUpdated;
         }
+        ClearParentObjectChildren();
     }
 
     private void OnDestroy()
@@ -26,17 +26,17 @@ public class ChatManager : MonoBehaviour
         // 取消订阅事件，避免内存泄漏
         if (HistoryManager.Instance != null)
         {
-            HistoryManager.Instance.OnHistoryUpdated -= HandleHistoryUpdated;
+            HistoryManager.Instance.OnHistoryDataUpdated -= HandleHistoryDataUpdated;
         }
     }
 
     // 事件处理函数
-    private void HandleHistoryUpdated(HistoryDataMessage historyData)
+    private void HandleHistoryDataUpdated(HistoryDataMessage historyData)
     {
         UpdateChatBubbles();
     }
 
-    public void UpdateChatBubbles()
+    private void UpdateChatBubbles()
     {
         ClearParentObjectChildren();
         DisplayChatMessages();
@@ -56,7 +56,6 @@ public class ChatManager : MonoBehaviour
     private void DisplayChatMessages()
     {
         var historyMessages = HistoryManager.Instance.GetHistoryData();
-        Debug.Log(JsonConvert.SerializeObject(historyMessages));
         var baseUrl = SettingsManager.Instance.GetSetting("General.BaseUrl");
 
         // 处理所有消息
