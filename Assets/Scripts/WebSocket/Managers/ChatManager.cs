@@ -1,5 +1,9 @@
 using UnityEngine;
 using Newtonsoft.Json;
+using System;
+using UnityEditor.VersionControl;
+using System.Collections.Generic;
+using System.Linq;
 
 public class ChatManager : MonoBehaviour
 {
@@ -53,12 +57,48 @@ public class ChatManager : MonoBehaviour
     {
         var historyMessages = HistoryManager.Instance.GetHistoryData();
         Debug.Log(JsonConvert.SerializeObject(historyMessages));
-        foreach (var message in historyMessages.messages)
+        var baseUrl = SettingsManager.Instance.GetSetting("General.BaseUrl");
+
+        // 处理所有消息
+        foreach (var message in historyMessages.messages.Concat(GetLastAssistantMessage(historyMessages)))
         {
             GameObject prefab = message.role == "human" ? chatBubbleRight : chatBubbleLeft;
             GameObject chatObject = Instantiate(prefab, parentObject);
-            chatObject.GetComponent<ChatContent>().SetContent(message.content);
+
+            var charContent = chatObject.GetComponent<ChatContent>();
+            charContent.SetName(message.name);
+            charContent.SetTime(message.timestamp);
+            charContent.SetContent(message.content);
+
+            var avatarManager = chatObject.GetComponent<AvatarManager>();
+            if (!string.IsNullOrEmpty(message.avatar))
+            {
+                string avatarUrl = new UriBuilder(baseUrl) { Path = $"avatars/{message.avatar}" }.ToString();
+                AvatarManager.AddOrUpdateAvatarUrl(message.name, avatarUrl);
+                avatarManager.SetAvatarByName(message.name);
+            }
         }
+
         Canvas.ForceUpdateCanvases();
     }
+
+    // 提取最后一个助手消息的逻辑
+    private IEnumerable<HistoryDataItem> GetLastAssistantMessage(HistoryDataMessage historyMessages)
+    {
+        var lastMsg = HistoryManager.Instance.assistantLastMessage;
+        if (historyMessages.messages.Count > 0 &&
+            historyMessages.messages.Last().role == "human" &&
+            !string.IsNullOrEmpty(lastMsg.content))
+        {
+            yield return new HistoryDataItem
+            {
+                role = "ai",
+                timestamp = DateTime.Now,
+                content = lastMsg.content,
+                name = lastMsg.name,
+                avatar = lastMsg.avatar
+            };
+        }
+    }
+
 }

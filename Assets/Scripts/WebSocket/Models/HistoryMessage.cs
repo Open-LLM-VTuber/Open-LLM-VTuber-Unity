@@ -29,8 +29,10 @@ public class HistoryDataItem
 {
     public string role;
     [JsonProperty("timestamp")]
-    public DateTime? timestamp;
+    public DateTime timestamp;
     public string content;
+    public string name;
+    public string avatar;
 }
 
 [Serializable]

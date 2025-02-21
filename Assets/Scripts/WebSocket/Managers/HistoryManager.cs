@@ -10,7 +10,7 @@ public class HistoryManager : Singleton<HistoryManager>
     // 历史记录更新事件
     public delegate void HistoryUpdatedHandler(HistoryDataMessage historyData);
     public event HistoryUpdatedHandler OnHistoryUpdated;
-    public string assistantLastMessage;
+    public HistoryDataItem assistantLastMessage = new HistoryDataItem();
 
     public void SetHistoryUid(string uid) => historyUid = uid;
 

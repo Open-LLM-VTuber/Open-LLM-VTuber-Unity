@@ -13,7 +13,7 @@ public sealed class WebSocketManager : InitOnceSingleton<WebSocketManager>
     {
         InitOnce(() =>
         {
-            Url = SettingsManager.Instance.GetSetting("WebSocketUrl");
+            Url = SettingsManager.Instance.GetSetting("General.WebSocketUrl");
             dispatcher = new MessageDispatcher();
             ws = new WebSocket(Url);
             ConfigureEventHandlers();

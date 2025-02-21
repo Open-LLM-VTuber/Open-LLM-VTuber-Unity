@@ -4,13 +4,7 @@ using UnityEngine;
 public class WebSocketController : MonoBehaviour
 {
     [SerializeField] private TMP_InputField inputField;
-    [SerializeField] private TMP_Text displayText;
-
-    private WebSocketManager wsManager;
-    private HistoryMessageHandler historyHandler;
-    private ConfigMessageHandler configHandler;
-    private TextMessageHandler textHandler;
-    private AudioMessageHandler audioHandler;
+    [SerializeField] private GameObject dialogPanel;
 
     private void Start()
     {
@@ -20,40 +14,35 @@ public class WebSocketController : MonoBehaviour
 
     private void InitializeHandlers()
     {
-        wsManager = WebSocketManager.Instance;
+        var wsManager = WebSocketManager.Instance;
         wsManager.Initialize();
 
-        historyHandler = HistoryMessageHandler.Instance;
-        historyHandler.Initialize(wsManager);
+        HistoryMessageHandler.Instance.Initialize(wsManager);
+        ConfigMessageHandler.Instance.Initialize(wsManager);
 
-        configHandler = ConfigMessageHandler.Instance;
-        configHandler.Initialize(wsManager);
-
-        if (displayText != null)
+        if (dialogPanel != null)
         {
-            textHandler = TextMessageHandler.Instance;
-            audioHandler = AudioMessageHandler.Instance;
-            textHandler.Initialize(wsManager, displayText);
-            audioHandler.Initialize(wsManager, displayText);
+            TextMessageHandler.Instance.Initialize(wsManager, dialogPanel);
+            AudioMessageHandler.Instance.Initialize(wsManager, dialogPanel);
         }
         
     }
 
-    public void OnRefreshButtonClicked()
+    public static void OnRefreshButtonClicked()
     {
         var historyUid = HistoryManager.Instance.GetHistoryUid();
         Debug.LogWarning("historyUid: " + historyUid);
-        wsManager.Send(new HistoryCreatedMessage { type = "fetch-and-set-history", history_uid = historyUid });
+        WebSocketManager.Instance.Send(new HistoryCreatedMessage { type = "fetch-and-set-history", history_uid = historyUid });
     }
 
     public static void Interrupt()
     {
-        var wsManager = WebSocketManager.Instance;
+        var lastMsg = HistoryManager.Instance.assistantLastMessage;
         // 假设每次都打断
-        wsManager.Send(new TextMessage
+        WebSocketManager.Instance.Send(new TextMessage
         {
             type = "interrupt-signal",
-            text = HistoryManager.Instance.assistantLastMessage
+            text = lastMsg.content
         });
 
         // 停止所有AI音频播放
@@ -61,7 +50,7 @@ public class WebSocketController : MonoBehaviour
         AudioManager.Instance.RemoveAllAudioByType(ECS.AudioType.AssistantVoice);
 
         // 清空, 下一次继续接收
-        HistoryManager.Instance.assistantLastMessage = string.Empty;
+        lastMsg.content = string.Empty;
     }
 
     public void OnSendButtonClicked()
@@ -69,7 +58,7 @@ public class WebSocketController : MonoBehaviour
         if (!string.IsNullOrEmpty(inputField.text))
         {
             Interrupt();
-            wsManager.Send(new TextMessage
+            WebSocketManager.Instance.Send(new TextMessage
             {
                 type = "text-input",
                 text = inputField.text

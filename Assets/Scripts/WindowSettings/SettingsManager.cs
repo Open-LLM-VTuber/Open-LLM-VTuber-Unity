@@ -1,26 +1,77 @@
-using System.Collections.Generic;
+using Newtonsoft.Json;
+using System;
 using System.IO;
+using System.Reflection;
 using UnityEngine;
+
 #if UNITY_ANDROID
 using UnityEngine.Android;
 #endif
-[System.Serializable]
-public class Setting
+
+[Serializable]
+public class GeneralSettings
 {
-    public string Key;
-    public string Value;
+    public string ResolutionWidth { get; set; } = "1920";
+    public string ResolutionHeight { get; set; } = "1080";
+    public bool UseCameraBackground { get; set; } = false;
+    public bool ShowSubtitle { get; set; } = true;
+    public string BackgroundPath { get; set; } = "ceiling-window-room-night.jpeg";
+    public string Live2DModelName { get; set; } = "shizuku";
+    public string I18n { get; set; } = "简体中文";
+    public string BackgroundUrl { get; set; } = string.Empty;
+    public string WebSocketUrl { get; set; } = "ws://127.0.0.1:12393/client-ws";
+    public string BaseUrl { get; set; } = "http://127.0.0.1:12393";
 }
 
-[System.Serializable]
-public class GameSettingsDict
+[Serializable]
+public class Live2DSettings
 {
-    public List<Setting> Settings = new List<Setting>();
+    public bool PointerInteractive { get; set; } = false;
+    public bool EnableScrollToResize { get; set; } = false;
+}
+
+[Serializable]
+public class ASRSettings 
+{
+    public bool AutoStopMicWhenAIStartSpeaking { get; set; } = false;
+    public bool AutoStopMicWhenConversationEnd { get; set; } = false;
+    public bool AutoStopMicWhenAIInterrupted { get; set; } = false;
+    public string SpeechProbThreshold { get; set; } = "97";
+    public string NegativeSpeechThreshold { get; set; } = "15";
+    public string RedemptionFrames { get; set; } = "15";
+}
+
+
+[Serializable]
+public class AgentSettings
+{
+    public bool AISpeakActively { get; set; } = false;
+    public bool TriggerAIToSpeak { get; set; } = false;
+}
+
+
+[Serializable]
+public class AudioSettings
+{
+    public string Volume { get; set; } = "100";
+    public bool Mute { get; set; } = false;
+
+}
+
+[Serializable]       
+public class GameSettings
+{
+    public GeneralSettings General { get; set; } = new GeneralSettings();
+    public Live2DSettings Live2D { get; set; } = new Live2DSettings();
+    public ASRSettings ASR { get; set; } = new ASRSettings();
+    public AudioSettings Audio { get; set; } = new AudioSettings();
+    public AgentSettings Agent { get; set; } = new AgentSettings();
 }
 
 public class SettingsManager : MonoBehaviour
 {
     private string savePath;
-    private GameSettingsDict currentSettings;
+    private GameSettings currentSettings;
 
     // 单例实例
     public static SettingsManager Instance { get; private set; }
@@ -56,9 +107,10 @@ public class SettingsManager : MonoBehaviour
         currentSettings = LoadSettings();
 
         // 如果配置文件不存在，则初始化默认设置
-        if (currentSettings.Settings.Count == 0)
+        if (currentSettings == null)
         {
-            InitializeDefaultSettings();
+            currentSettings = new GameSettings();
+
             SaveSettings();
         }
 
@@ -67,75 +119,121 @@ public class SettingsManager : MonoBehaviour
 
     public void SaveSettings()
     {
-        string json = JsonUtility.ToJson(currentSettings);
+        string json = JsonConvert.SerializeObject(currentSettings, Formatting.Indented);
         File.WriteAllText(savePath, json);
         Debug.Log("Settings saved to: " + savePath);
     }
 
-    public GameSettingsDict LoadSettings()
+    public GameSettings LoadSettings()
     {
         if (File.Exists(savePath))
         {
             string json = File.ReadAllText(savePath);
-            return JsonUtility.FromJson<GameSettingsDict>(json);
+            return JsonConvert.DeserializeObject<GameSettings>(json);
         }
         else
         {
             Debug.Log("No settings file found, using default settings.");
-            return new GameSettingsDict();
+            return null;
         }
     }
 
-    // 添加默认设置
-    private void InitializeDefaultSettings()
+    // 通过字符串路径获取设置
+    public string GetSetting(string path)
     {
-        currentSettings.Settings.Clear(); // 清空现有设置
+        string[] parts = path.Split('.');
+        if (parts.Length == 0)
+        {
+            Debug.LogError("Invalid setting path: " + path);
+            return null;
+        }
+        
+        object currentObject = currentSettings;
+        foreach (string part in parts)
+        {
+            
+            var property = currentObject.GetType().GetProperty(part);
+            if (property == null)
+            {
+                var type = currentObject.GetType();
+                Debug.LogWarning($"type: {type}");
+                // 获取所有公共和非公共的实例属性
+                PropertyInfo[] properties = type.GetProperties();
+                foreach (PropertyInfo prope in properties)
+                {
+                    Debug.LogWarning($"property: {prope.Name}");
+                }
+                Debug.LogError($"Setting '{part}' not found in path: {path}");  
+                return null;
+            }
+            currentObject = property.GetValue(currentObject);
+        }
 
-        // 初始化默认设置
-        AddSetting("ResolutionWidth", "1920");
-        AddSetting("ResolutionHeight", "1080");
-        AddSetting("BackgroundPath", "ceiling-window-room-night.jpeg");
-        AddSetting("Live2DModelName", "shizuku");
-        AddSetting("I18n", "简体中文");
-        AddSetting("BackgroundUrl", string.Empty);
-        AddSetting("WebSocketUrl", "ws://127.0.0.1:12393/client-ws");
-        AddSetting("BaseUrl", "http://127.0.0.1:12393");
-        AddSetting("SpeechProbThrehold", "97");
-        AddSetting("NegativeSpeechThrehold", "15");
-        AddSetting("RedemptionFrames", "15");
+        return currentObject?.ToString();
     }
 
-    // 添加设置
-    public void AddSetting(string key, string value)
+    // 通过字符串路径更新设置
+    public void UpdateSetting(string path, string newValue)
     {
-        if (currentSettings.Settings.Exists(s => s.Key == key))
+        string[] parts = path.Split('.');
+        if (parts.Length == 0)
         {
-            Debug.LogError($"Setting with key '{key}' already exists.");
+            Debug.LogError("Invalid setting path: " + path);
             return;
         }
-        currentSettings.Settings.Add(new Setting { Key = key, Value = value });
-        SaveSettings();
-    }
 
-    // 获取设置
-    public string GetSetting(string key)
-    {
-        Setting setting = currentSettings.Settings.Find(s => s.Key == key);
-        return setting != null ? setting.Value : null;
-    }
-
-    // 更新设置
-    public void UpdateSetting(string key, string newValue)
-    {
-        Setting setting = currentSettings.Settings.Find(s => s.Key == key);
-        if (setting != null)
+        object currentObject = currentSettings;
+        for (int i = 0; i < parts.Length - 1; i++)
         {
-            setting.Value = newValue;
-            SaveSettings();
+            var property = currentObject.GetType().GetProperty(parts[i]);
+            if (property == null)
+            {
+                Debug.LogError($"Setting '{parts[i]}' not found in path: {path}");
+                return;
+            }
+            currentObject = property.GetValue(currentObject);
+        }
+
+        var finalProperty = currentObject.GetType().GetProperty(parts[parts.Length - 1]);
+        if (finalProperty == null)
+        {
+            Debug.LogError($"Setting '{parts[parts.Length - 1]}' not found in path: {path}");
+            return;
+        }
+
+        // 根据属性类型设置值
+        if (finalProperty.PropertyType == typeof(string))
+        {
+            finalProperty.SetValue(currentObject, newValue);
+        }
+        else if (finalProperty.PropertyType == typeof(int))
+        {
+            if (int.TryParse(newValue, out int intValue))
+            {
+                finalProperty.SetValue(currentObject, intValue);
+            }
+            else
+            {
+                Debug.LogError($"Failed to parse '{newValue}' as int for setting: {path}");
+            }
+        }
+        else if (finalProperty.PropertyType == typeof(bool))
+        {
+            if (bool.TryParse(newValue, out bool boolValue))
+            {
+                finalProperty.SetValue(currentObject, boolValue);
+            }
+            else
+            {
+                Debug.LogError($"Failed to parse '{newValue}' as bool for setting: {path}");
+            }
         }
         else
         {
-            Debug.LogError($"Setting with key '{key}' not found.");
+            Debug.LogError($"Unsupported property type '{finalProperty.PropertyType}' for setting: {path}");
         }
+
+        SaveSettings();
     }
+
 }
