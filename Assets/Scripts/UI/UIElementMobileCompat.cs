@@ -10,10 +10,10 @@ public class UIElementOnlyWidth
     public Transform element;
     public LayoutOption layoutOption = LayoutOption.Vertical;
 
-    [Tooltip("仅当 LayoutOption 为 Vertical 时有效")]
+    [Tooltip("仅当 LayoutOption 为 Vertical 时有效,输入原先的组件宽度")]
     public float OriginalItemWidth; // 仅当 Vertical 时使用
 
-    [Tooltip("仅当 LayoutOption 为 Horizontal 时有效")]
+    [Tooltip("仅当 LayoutOption 为 Horizontal 时有效,输入与同级组件的间距和")]
     public float Spacing; // 仅当 Horizontal 时使用
 }
 
@@ -57,14 +57,21 @@ public class UIElementAdjustSize
     public Transform element; // 父组件，包含所有子对象
 }
 
+
+[System.Serializable]
+public class UIElementRestrictWidth
+{
+    public Transform element; // 父组件，包含所有子对象
+    public float originalItemWidth; // 原始组件的宽度
+}
+
 public class UIElementMobileCompat : MonoBehaviour
 {
     public List<UIElementOnlyWidth> onlyWidth = new List<UIElementOnlyWidth>(); // onlyWidth, Inspector 可配置
     public List<UIElementFullScreenWidth> fullScreenWidth = new List<UIElementFullScreenWidth>(); // fullScreenWidth, Inspector 可配置
     public List<UIElementSpaceBetween> spaceBetween = new List<UIElementSpaceBetween>(); // Inspector 可配置
-    // public List<UIElementFontSize> fontSize = new List<UIElementFontSize>(); // 字号, Inspector 可配置
-    // public List<UIElementIconSize> iconSize = new List<UIElementIconSize>(); // 图片, Inspector 可配置
-    public List<UIElementAdjustSize> adjustSize = new List<UIElementAdjustSize>(); // 图片, Inspector 可配置
+    public List<UIElementAdjustSize> adjustSize = new List<UIElementAdjustSize>(); //  Inspector 可配置
+    public List<UIElementRestrictWidth> restrictWidth = new List<UIElementRestrictWidth>(); // 限制宽度, Inspector 可配置
 
     private float worldScreenWidth;
     private float referenceScreenWidth = 1080f;
@@ -85,6 +92,7 @@ public class UIElementMobileCompat : MonoBehaviour
         // AdjustFontSizeElements();
         AdjustOnlyWidthElements();
         AdjustSpaceBetweenElements();
+        RestrictUIElementWidth();
     }
 
     private void ComputeWorldScreenWidth()
@@ -211,12 +219,6 @@ public class UIElementMobileCompat : MonoBehaviour
     /// </summary>
     private void AdjustUIElementsSize()
     {
-        if (adjustSize == null || adjustSize.Count == 0)
-        {
-            Debug.LogWarning("No UI elements assigned in adjustSize!");
-            return;
-        }
-
         float fontScaleFactor = 0.2f; // 文字缩放因子
         float iconScaleFactor = 0.2f; // 图标缩放因子
         float live2dScaleFactor = 0.1f; // live2d缩放因子
@@ -373,6 +375,20 @@ public class UIElementMobileCompat : MonoBehaviour
 
     #endregion
 
+    private void RestrictUIElementWidth()
+    {
+        foreach (var elementData in restrictWidth)
+        {
+            var element = elementData.element;
+            if (element == null) continue;
+            RectTransform rt = element.GetComponent<RectTransform>();
+            float maxWidth = worldScreenWidth - (referenceScreenWidth - elementData.originalItemWidth);
+            if (rt.sizeDelta.x > maxWidth)
+            {
+                rt.sizeDelta = new Vector2(maxWidth, rt.sizeDelta.y);
+            }
+        }
+    }
 }
 
 
