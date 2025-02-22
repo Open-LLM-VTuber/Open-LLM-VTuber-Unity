@@ -1,12 +1,12 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class HistoryUIManager : MonoBehaviour
 {
     public GameObject messageEntry;
     public GameObject msgSplitLine;
+    public ScrollRectFix chatHistoryScrollView;
     public Transform parentObject;      // 父对象
 
     void Start()
@@ -14,7 +14,7 @@ public class HistoryUIManager : MonoBehaviour
         // 订阅历史记录更新事件
         if (HistoryManager.Instance != null)
         {
-            HistoryManager.Instance.OnHistoryListUpdated += HandleHistoryListUpdated;
+            HistoryManager.Instance.OnHistoryListUpdated += UpdateEntries;
         }
         ClearParentObjectChildren();
     }
@@ -24,13 +24,8 @@ public class HistoryUIManager : MonoBehaviour
         // 取消订阅事件，避免内存泄漏
         if (HistoryManager.Instance != null)
         {
-            HistoryManager.Instance.OnHistoryListUpdated -= HandleHistoryListUpdated;
+            HistoryManager.Instance.OnHistoryListUpdated -= UpdateEntries;
         }
-    }
-
-    private void HandleHistoryListUpdated(HistoryListMessage historyList)
-    {
-        UpdateEntries();
     }
 
     public void UpdateEntries()
@@ -52,7 +47,7 @@ public class HistoryUIManager : MonoBehaviour
 
     private void DisplayMessageEntries()
     {
-        var historyList = HistoryManager.Instance.GetHistoryList();
+        var historyList = HistoryManager.Instance.HistoryList;
         var baseUrl = SettingsManager.Instance.GetSetting("General.BaseUrl");
 
         foreach (var history in historyList.histories)
@@ -66,6 +61,21 @@ public class HistoryUIManager : MonoBehaviour
             charContent.SetName(message.name);
             charContent.SetTime(message.timestamp);
             charContent.SetContent(message.content);
+            charContent.HistoryUid = history.uid;
+
+            // 每个按钮绑定"进入时，更新uid后刷新记录"
+            if (chatHistoryScrollView != null)
+            {
+                var button = entryObject.GetComponent<Button>();
+                button.onClick.AddListener(() => 
+                { 
+                    HistoryManager.Instance.HistoryUid = charContent.HistoryUid;
+                    WebSocketController.RefreshHistoryData();
+                    chatHistoryScrollView.Refresh();
+
+                });
+               
+            }
 
             var avatarManager = entryObject.GetComponent<AvatarManager>();
             if (!string.IsNullOrEmpty(message.avatar))

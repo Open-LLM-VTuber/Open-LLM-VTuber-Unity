@@ -28,11 +28,18 @@ public class WebSocketController : MonoBehaviour
         
     }
 
-    public static void OnRefreshButtonClicked()
+    public static void RefreshHistoryList()
     {
-        var historyUid = HistoryManager.Instance.GetHistoryUid();
+        WebSocketManager.Instance.Send(new WebSocketMessage
+            { type = "fetch-history-list" });
+    }
+
+    public static void RefreshHistoryData()
+    {
+        var historyUid = HistoryManager.Instance.HistoryUid;
         Debug.LogWarning("historyUid: " + historyUid);
-        WebSocketManager.Instance.Send(new HistoryCreatedMessage { type = "fetch-and-set-history", history_uid = historyUid });
+        WebSocketManager.Instance.Send(new HistoryCreatedMessage 
+            { type = "fetch-and-set-history", history_uid = historyUid });
     }
 
     public static void Interrupt()
@@ -53,7 +60,7 @@ public class WebSocketController : MonoBehaviour
         lastMsg.content = string.Empty;
     }
 
-    public void OnSendButtonClicked()
+    public void Send()
     {
         if (!string.IsNullOrEmpty(inputField.text))
         {

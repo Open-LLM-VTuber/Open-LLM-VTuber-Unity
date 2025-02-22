@@ -33,6 +33,7 @@ public sealed class WebSocketManager : InitOnceSingleton<WebSocketManager>
     {
         if (ws?.IsAlive == true)
         {
+            Debug.LogWarning("Sent Type: " + message.type);
             string json = JsonConvert.SerializeObject(message);
             ws.Send(json);
         }

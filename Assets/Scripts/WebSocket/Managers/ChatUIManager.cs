@@ -13,10 +13,10 @@ public class ChatUIManager : MonoBehaviour
 
     void Start()
     {
-        // 订阅历史记录更新事件
+        // 保证能实时更新
         if (HistoryManager.Instance != null)
         {
-            HistoryManager.Instance.OnHistoryDataUpdated += HandleHistoryDataUpdated;
+            HistoryManager.Instance.OnHistoryDataUpdated += UpdateChatBubbles;
         }
         ClearParentObjectChildren();
     }
@@ -26,17 +26,11 @@ public class ChatUIManager : MonoBehaviour
         // 取消订阅事件，避免内存泄漏
         if (HistoryManager.Instance != null)
         {
-            HistoryManager.Instance.OnHistoryDataUpdated -= HandleHistoryDataUpdated;
+            HistoryManager.Instance.OnHistoryDataUpdated -= UpdateChatBubbles;
         }
     }
 
-    // 事件处理函数
-    private void HandleHistoryDataUpdated(HistoryDataMessage historyData)
-    {
-        UpdateChatBubbles();
-    }
-
-    private void UpdateChatBubbles()
+    public void UpdateChatBubbles()
     {
         ClearParentObjectChildren();
         DisplayChatMessages();
@@ -55,7 +49,7 @@ public class ChatUIManager : MonoBehaviour
 
     private void DisplayChatMessages()
     {
-        var historyMessages = HistoryManager.Instance.GetHistoryData();
+        var historyMessages = HistoryManager.Instance.HistoryData;
         var baseUrl = SettingsManager.Instance.GetSetting("General.BaseUrl");
 
         // 处理所有消息

@@ -30,32 +30,23 @@ public class HistoryMessageHandler : InitOnceSingleton<HistoryMessageHandler>
         var historyMsg = message as HistoryListMessage;
         Debug.Log($"Received {historyMsg.histories.Count} history items");
 
-        HistoryManager.Instance.SetHistoryList(historyMsg);
-
-        foreach (var history in historyMsg.histories)
-        {
-            Debug.Log($"History: {history.timestamp}, Latest: {history.latest_message.content}");
-        }
+        HistoryManager.Instance.HistoryList = historyMsg;
+        HistoryManager.Instance.UpdateHistoryList();
     }
 
     private void HandleHistoryData(WebSocketMessage message)
     {
         var historyData = message as HistoryDataMessage;
         Debug.Log($"Received {historyData.messages.Count} history messages");
-
-        HistoryManager.Instance.SetHistoryData(historyData);
-        Debug.Log("SetHistoryData : " + JsonConvert.SerializeObject(historyData));
-        foreach (var msg in historyData.messages)
-        {
-            Debug.Log($"Message: {msg.role} - {msg.content}");
-        }
+        HistoryManager.Instance.HistoryData = historyData;
+        HistoryManager.Instance.UpdateHistoryData();
     }
 
     private void HandleNewHistory(WebSocketMessage message)
     {
         var newHistory = message as HistoryCreatedMessage;
         Debug.LogWarning($"New history historyUid:  { newHistory.history_uid}");
-        HistoryManager.Instance.SetHistoryUid(newHistory.history_uid);
+        HistoryManager.Instance.HistoryUid = newHistory.history_uid;
     }
 
     private void HandleHistoryDeleted(WebSocketMessage message)

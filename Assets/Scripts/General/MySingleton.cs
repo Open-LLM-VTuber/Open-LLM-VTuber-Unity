@@ -1,7 +1,7 @@
 using UnityEngine;
 using System; // 需要引入 System 命名空间以使用 Lazy<T>
 
-public class Singleton<T> : MonoBehaviour where T : MonoBehaviour
+public abstract class Singleton<T> : MonoBehaviour where T : MonoBehaviour
 {
     private static readonly Lazy<T> _lazyInstance = new Lazy<T>(CreateSingleton);
 

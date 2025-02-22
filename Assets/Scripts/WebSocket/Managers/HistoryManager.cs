@@ -1,5 +1,4 @@
 using System;
-using System.Text;
 using UnityEngine;
 
 public class HistoryManager : Singleton<HistoryManager>
@@ -8,46 +7,47 @@ public class HistoryManager : Singleton<HistoryManager>
     private HistoryListMessage historyList;
     private HistoryDataMessage historyData;
 
-    // 历史记录数据更新事件
-    public event Action<HistoryDataMessage> OnHistoryDataUpdated;
-
-    // 历史记录条目更新事件
-    public event Action<HistoryListMessage> OnHistoryListUpdated;
+    public event Action OnHistoryDataUpdated;
+    public event Action OnHistoryListUpdated;
 
     public HistoryDataItem assistantLastMessage = new HistoryDataItem();
 
-    public void SetHistoryUid(string uid) => historyUid = uid;
-
-    public void SetHistoryList(HistoryListMessage msg) 
+    public string HistoryUid
     {
-        historyList = msg;
-        UpdateHistoryList();
+        get => historyUid;
+        set => historyUid = value;
     }
 
-    public void SetHistoryData(HistoryDataMessage msg)
+    public HistoryListMessage HistoryList
     {
-        historyData = msg;
-        UpdateHistoryData();
+        get => historyList;
+        set
+        {
+            historyList = value;
+        }
+    }
+
+    public HistoryDataMessage HistoryData
+    {
+        get => historyData;
+        set
+        {
+            historyData = value;
+        }
     }
 
     public void UpdateHistoryList()
     {
-        OnHistoryListUpdated?.Invoke(historyList);
+        OnHistoryListUpdated?.Invoke();
     }
-
+    
     public void UpdateHistoryData()
     {
-        OnHistoryDataUpdated?.Invoke(historyData);
+        OnHistoryDataUpdated?.Invoke();
     }
-
-    public string GetHistoryUid() => historyUid;
-
-    public HistoryListMessage GetHistoryList() => historyList;
-
-    public HistoryDataMessage GetHistoryData() => historyData;
 
     private void OnDestroy()
     {
-        Debug.LogWarning("OnDestroy historyUid: " + historyUid);
+        Debug.LogWarning($"OnDestroy historyUid: {historyUid}");
     }
 }
