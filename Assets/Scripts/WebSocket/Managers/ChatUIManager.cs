@@ -30,6 +30,14 @@ public class ChatUIManager : MonoBehaviour
         }
     }
 
+    public static void RefreshHistoryData()
+    {
+        var historyUid = HistoryManager.Instance.HistoryUid;
+        Debug.LogWarning("historyUid: " + historyUid);
+        WebSocketManager.Instance.Send(new HistoryCreatedMessage
+        { type = "fetch-and-set-history", history_uid = historyUid });
+    }
+
     public void UpdateChatBubbles()
     {
         ClearParentObjectChildren();

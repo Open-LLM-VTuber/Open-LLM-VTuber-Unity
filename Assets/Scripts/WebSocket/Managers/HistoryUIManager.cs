@@ -70,7 +70,7 @@ public class HistoryUIManager : MonoBehaviour
                 button.onClick.AddListener(() => 
                 { 
                     HistoryManager.Instance.HistoryUid = charContent.HistoryUid;
-                    WebSocketController.RefreshHistoryData();
+                    ChatUIManager.RefreshHistoryData();
                     chatHistoryScrollView.Refresh();
 
                 });
@@ -89,5 +89,17 @@ public class HistoryUIManager : MonoBehaviour
         Canvas.ForceUpdateCanvases();
     }
 
+
+    public void RefreshHistoryList()
+    {
+        WebSocketManager.Instance.Send(new WebSocketMessage
+        { type = "fetch-history-list" });
+    }
+
+    public void CreateNewHistory()
+    {
+        WebSocketManager.Instance.Send(new WebSocketMessage
+        { type = "create-new-history" });
+    }
 
 }

@@ -28,20 +28,6 @@ public class WebSocketController : MonoBehaviour
         
     }
 
-    public static void RefreshHistoryList()
-    {
-        WebSocketManager.Instance.Send(new WebSocketMessage
-            { type = "fetch-history-list" });
-    }
-
-    public static void RefreshHistoryData()
-    {
-        var historyUid = HistoryManager.Instance.HistoryUid;
-        Debug.LogWarning("historyUid: " + historyUid);
-        WebSocketManager.Instance.Send(new HistoryCreatedMessage 
-            { type = "fetch-and-set-history", history_uid = historyUid });
-    }
-
     public static void Interrupt()
     {
         var lastMsg = HistoryManager.Instance.assistantLastMessage;
