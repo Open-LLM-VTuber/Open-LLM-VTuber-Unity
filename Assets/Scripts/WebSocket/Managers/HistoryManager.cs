@@ -10,7 +10,25 @@ public class HistoryManager : Singleton<HistoryManager>
     public event Action OnHistoryDataUpdated;
     public event Action OnHistoryListUpdated;
 
-    public HistoryDataItem assistantLastMessage = new HistoryDataItem();
+    public HistoryDataItem assistantLastMessage;
+    private bool deltaUpdate = false;
+
+    protected override void Awake()
+    {
+        base.Awake();
+        historyList = new();
+        historyData = new();
+        historyList.histories = new();
+        historyData.messages = new();
+        assistantLastMessage = new();
+    }
+
+    // 增量更新（让滚轮拉到底部）
+    public bool DeltaUpdate
+    {
+        get => deltaUpdate;
+        set => deltaUpdate = value;
+    }
 
     public string HistoryUid
     {

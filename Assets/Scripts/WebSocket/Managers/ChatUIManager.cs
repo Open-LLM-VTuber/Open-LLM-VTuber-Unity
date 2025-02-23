@@ -3,22 +3,34 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.UI;
+using System.Collections;
 
 public class ChatUIManager : MonoBehaviour
 {
     public GameObject chatBubbleRight; // 人类聊天预制体
     public GameObject chatBubbleLeft;    // AI聊天预制体
-    public Transform parentObject;      // 父对象
-    public RectTransform scrollViewport;
+    public RectTransform parentObject;      // 父对象
+
+    private ScrollRectFix scrollRectFix;
+
+    private void Awake()
+    {
+        scrollRectFix = GetComponent<ScrollRectFix>();
+    }
 
     void Start()
     {
         // 保证能实时更新
+        ClearParentObjectChildren();
+        
         if (HistoryManager.Instance != null)
         {
             HistoryManager.Instance.OnHistoryDataUpdated += UpdateChatBubbles;
         }
-        ClearParentObjectChildren();
+        HistoryManager.Instance.DeltaUpdate = true;
+        // 最开始刷新一次
+        HistoryManager.Instance.UpdateHistoryData();
     }
 
     private void OnDestroy()
@@ -79,8 +91,28 @@ public class ChatUIManager : MonoBehaviour
                 avatarManager.SetAvatarByName(message.name);
             }
         }
+        
+        LayoutRebuilder.ForceRebuildLayoutImmediate(parentObject);
+        if (HistoryManager.Instance.DeltaUpdate)
+        {
+            StartCoroutine(ScrollToBottomCorotine());
+        }
+    
+    }
 
-        Canvas.ForceUpdateCanvases();
+    public void SetScrollToButtom()
+    {
+        HistoryManager.Instance.DeltaUpdate = true;
+    }
+
+    IEnumerator ScrollToBottomCorotine()
+    {
+        // 下面的不可少，不然会弹回去
+        LayoutRebuilder.ForceRebuildLayoutImmediate(parentObject);
+        yield return new WaitForEndOfFrame();
+        scrollRectFix.verticalNormalizedPosition = 0f;
+        HistoryManager.Instance.DeltaUpdate = false;
+
     }
 
     // 提取最后一个助手消息的逻辑
@@ -94,7 +126,7 @@ public class ChatUIManager : MonoBehaviour
             yield return new HistoryDataItem
             {
                 role = "ai",
-                timestamp = DateTime.Now,
+                timestamp = historyMessages.messages.Last().timestamp,
                 content = lastMsg.content,
                 name = lastMsg.name,
                 avatar = lastMsg.avatar

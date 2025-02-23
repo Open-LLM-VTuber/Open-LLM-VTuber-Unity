@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -7,16 +8,18 @@ public class HistoryUIManager : MonoBehaviour
     public GameObject messageEntry;
     public GameObject msgSplitLine;
     public ScrollRectFix chatHistoryScrollView;
-    public Transform parentObject;      // 父对象
+    public RectTransform parentObject;      // 父对象
+    public Scrollbar scrollBar;
 
     void Start()
     {
+        ClearParentObjectChildren();
         // 订阅历史记录更新事件
         if (HistoryManager.Instance != null)
         {
             HistoryManager.Instance.OnHistoryListUpdated += UpdateEntries;
         }
-        ClearParentObjectChildren();
+        HistoryManager.Instance.UpdateHistoryList();
     }
 
     private void OnDestroy()
@@ -32,6 +35,12 @@ public class HistoryUIManager : MonoBehaviour
     {
         ClearParentObjectChildren();
         DisplayMessageEntries();
+    }
+
+    private IEnumerator ScrollToBottomCoroutine()
+    {
+        yield return new WaitForEndOfFrame(); // 等待布局渲染完成
+        scrollBar.value = 0f;
     }
 
     private void ClearParentObjectChildren()
@@ -70,13 +79,11 @@ public class HistoryUIManager : MonoBehaviour
                 button.onClick.AddListener(() => 
                 { 
                     HistoryManager.Instance.HistoryUid = charContent.HistoryUid;
-                    ChatUIManager.RefreshHistoryData();
+                    HistoryManager.Instance.DeltaUpdate = true;
                     chatHistoryScrollView.Refresh();
-
                 });
                
             }
-
             var avatarManager = entryObject.GetComponent<AvatarManager>();
             if (!string.IsNullOrEmpty(message.avatar))
             {
@@ -86,7 +93,7 @@ public class HistoryUIManager : MonoBehaviour
             }
         }
 
-        Canvas.ForceUpdateCanvases();
+        LayoutRebuilder.ForceRebuildLayoutImmediate(parentObject);
     }
 
 

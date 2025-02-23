@@ -55,6 +55,8 @@ public class AudioMessageHandler : InitOnceSingleton<AudioMessageHandler>
             lastMsg.content += msg.display_text.text;
             lastMsg.avatar = msg.display_text.avatar;
             lastMsg.name = msg.display_text.name;
+            HistoryManager.Instance.DeltaUpdate = true;
+            HistoryManager.Instance.UpdateHistoryData();
 
             if (!string.IsNullOrEmpty(msg.audio))
             {
