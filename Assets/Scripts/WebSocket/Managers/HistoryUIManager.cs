@@ -5,11 +5,16 @@ using UnityEngine.UI;
 
 public class HistoryUIManager : MonoBehaviour
 {
+    [Header("ScrollRect")]
     public GameObject messageEntry;
     public GameObject msgSplitLine;
     public ScrollRectFix chatHistoryScrollView;
     public RectTransform parentObject;      // 父对象
     public Scrollbar scrollBar;
+
+    [Header("MessageEntry")]
+    [SerializeField] private GameObject longPressInfo; 
+    [SerializeField] private RectTransform infoParentObject; 
 
     void Start()
     {
@@ -75,14 +80,20 @@ public class HistoryUIManager : MonoBehaviour
             // 每个按钮绑定"进入时，更新uid后刷新记录"
             if (chatHistoryScrollView != null)
             {
-                var button = entryObject.GetComponent<Button>();
-                button.onClick.AddListener(() => 
+                var button = entryObject.GetComponent<LongPressButton>();
+                button.onShortPress.AddListener(() => 
                 { 
                     HistoryManager.Instance.HistoryUid = charContent.HistoryUid;
                     HistoryManager.Instance.DeltaUpdate = true;
                     chatHistoryScrollView.Refresh();
+                    
                 });
-               
+
+                button.onLongPress.AddListener(() => { 
+                    var infoObject = Instantiate(longPressInfo, infoParentObject);
+                    var fadeAnimator = infoObject.GetComponent<FadeAnimation>();
+                    fadeAnimator.FadeIn();
+                });
             }
             var avatarManager = entryObject.GetComponent<AvatarManager>();
             if (!string.IsNullOrEmpty(message.avatar))
