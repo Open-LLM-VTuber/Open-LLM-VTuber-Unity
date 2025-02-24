@@ -49,7 +49,7 @@ public class ScrollRectFix : ScrollRect
     public override void OnEndDrag(PointerEventData eventData)
     {
         base.OnEndDrag(eventData);
-        Debug.LogWarning($"OnEndDrag {refreshReady}");
+
         if (refreshReady)
         {
             Refresh();

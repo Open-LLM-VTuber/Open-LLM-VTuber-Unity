@@ -52,6 +52,7 @@ public class HistoryMessageHandler : InitOnceSingleton<HistoryMessageHandler>
     private void HandleHistoryDeleted(WebSocketMessage message)
     {
         var deletedHistory = message as HistoryDeletedMessage;
-        Debug.Log($"History deleted: {deletedHistory.history_uid}, Success: {deletedHistory.success}");
+        Debug.Log("HandleHistoryDeleted");
+        //Debug.Log($"History deleted: {deletedHistory.history_uid}, Success: {deletedHistory.success}");
     }
 }

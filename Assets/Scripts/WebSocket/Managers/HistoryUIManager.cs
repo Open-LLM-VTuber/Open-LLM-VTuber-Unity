@@ -93,6 +93,9 @@ public class HistoryUIManager : MonoBehaviour
                     var infoObject = Instantiate(longPressInfo, infoParentObject);
                     var fadeAnimator = infoObject.GetComponent<FadeAnimation>();
                     fadeAnimator.FadeIn();
+                    var entryOp = infoObject.GetComponent<MessageEntryOp>();
+                    entryOp.messageEntry = entryObject; // 传递entry引用
+                    entryOp.msgSplitLine = splitObject; // 传递splitLine引用
                 });
             }
             var avatarManager = entryObject.GetComponent<AvatarManager>();
@@ -107,18 +110,22 @@ public class HistoryUIManager : MonoBehaviour
         LayoutRebuilder.ForceRebuildLayoutImmediate(parentObject);
     }
 
-
-    public void RefreshHistoryList()
+    public static void RefreshHistoryList()
     {
-        Debug.LogWarning("RefreshHistoryList");
         WebSocketManager.Instance.Send(new WebSocketMessage
         { type = "fetch-history-list" });
     }
 
-    public void CreateNewHistory()
+    public static void CreateNewHistory()
     {
         WebSocketManager.Instance.Send(new WebSocketMessage
         { type = "create-new-history" });
+    }
+
+    public static void DeleteHistory(string uid)
+    {
+        WebSocketManager.Instance.Send(new HistoryCreatedMessage
+        { type = "delete-history", history_uid = uid});
     }
 
 }
