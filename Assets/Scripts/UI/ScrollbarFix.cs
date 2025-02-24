@@ -49,6 +49,7 @@ public class ScrollRectFix : ScrollRect
     public override void OnEndDrag(PointerEventData eventData)
     {
         base.OnEndDrag(eventData);
+        Debug.LogWarning($"OnEndDrag {refreshReady}");
         if (refreshReady)
         {
             Refresh();
@@ -68,7 +69,6 @@ public class ScrollRectFix : ScrollRect
     private IEnumerator RefreshContent()
     {
         ShowRefreshIndicator();
-
         bool refreshCompleted = false;
 
         if (refreshAction != null)
@@ -96,7 +96,6 @@ public class ScrollRectFix : ScrollRect
                 Debug.LogWarning("刷新操作超时");
             }
         }
-
         // 执行后续操作
         postRefreshAction?.Invoke();
         DestroyRefreshIndicator();

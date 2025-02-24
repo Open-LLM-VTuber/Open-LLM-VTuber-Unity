@@ -29,7 +29,7 @@ public class ChatUIManager : MonoBehaviour
         }
         HistoryManager.Instance.DeltaUpdate = true;
         // 最开始刷新一次
-        HistoryManager.Instance.UpdateHistoryData();
+        RefreshHistoryData();
     }
 
     private void OnDestroy()

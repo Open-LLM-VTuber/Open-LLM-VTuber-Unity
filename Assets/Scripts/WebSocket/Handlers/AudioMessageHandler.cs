@@ -53,13 +53,7 @@ public class AudioMessageHandler : InitOnceSingleton<AudioMessageHandler>
 
             TextMessageHandler.Instance.State.IsFrontendSynced = false;
             // 记下最后的回复，用于interrupt-signal
-            var lastMsg = HistoryManager.Instance.assistantLastMessage;
-            lastMsg.content += msg.display_text.text;
-            lastMsg.avatar = msg.display_text.avatar;
-            lastMsg.name = msg.display_text.name;
-            lastMsg.timestamp = DateTime.Now;
-            HistoryManager.Instance.DeltaUpdate = true;
-            HistoryManager.Instance.UpdateHistoryData();
+            UpdateLastMessage(msg);
 
             if (!string.IsNullOrEmpty(msg.audio))
             {
@@ -92,6 +86,17 @@ public class AudioMessageHandler : InitOnceSingleton<AudioMessageHandler>
                 type = "frontend-playback-complete"
             });
         }
+    }
+
+    private void UpdateLastMessage(AudioMessage msg)
+    {
+        var lastMsg = HistoryManager.Instance.assistantLastMessage;
+        lastMsg.content += msg.display_text.text;
+        lastMsg.avatar = msg.display_text.avatar;
+        lastMsg.name = msg.display_text.name;
+        lastMsg.timestamp = DateTime.Now;
+        HistoryManager.Instance.DeltaUpdate = true;
+        HistoryManager.Instance.UpdateHistoryData();
     }
 
     public void ClearAudioQueue()

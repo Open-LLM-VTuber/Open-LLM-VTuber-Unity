@@ -24,7 +24,7 @@ public class HistoryUIManager : MonoBehaviour
         {
             HistoryManager.Instance.OnHistoryListUpdated += UpdateEntries;
         }
-        HistoryManager.Instance.UpdateHistoryList();
+        RefreshHistoryList();
     }
 
     private void OnDestroy()
@@ -110,6 +110,7 @@ public class HistoryUIManager : MonoBehaviour
 
     public void RefreshHistoryList()
     {
+        Debug.LogWarning("RefreshHistoryList");
         WebSocketManager.Instance.Send(new WebSocketMessage
         { type = "fetch-history-list" });
     }
