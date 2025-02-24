@@ -3,28 +3,25 @@ public class ServerState
 {
     private readonly object _lock = new object();
 
-    private bool _allowUnityAudio;
     private bool _isInterrupted;
-
-    public bool AllowUnityAudio
-    {
-        get { lock (_lock) return _allowUnityAudio; }
-        private set { lock (_lock) _allowUnityAudio = value; }
-    }
+    private bool _isBackendSynced = false;
+    private bool _isFrontendSynced = true;
 
     public bool IsInterrupted
     {
         get { lock (_lock) return _isInterrupted; }
-        private set { lock (_lock) _isInterrupted = value; }
+        set { lock (_lock) _isInterrupted = value; }
     }
 
-    public void SetAllowUnityAudio(bool allow)
+    public bool IsBackendSynced
     {
-        AllowUnityAudio = allow;
+        get { return _isBackendSynced; }
+        set { _isBackendSynced = value; }         
     }
 
-    public void SetInterrupted(bool interrupted)
+    public bool IsFrontendSynced
     {
-        IsInterrupted = interrupted;
+        get { return _isFrontendSynced; }
+        set { _isFrontendSynced = value; }
     }
 }

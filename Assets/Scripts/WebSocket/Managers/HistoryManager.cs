@@ -12,6 +12,7 @@ public class HistoryManager : Singleton<HistoryManager>
 
     public HistoryDataItem assistantLastMessage;
     private bool deltaUpdate = false;
+    private bool synced = false;
 
     protected override void Awake()
     {
@@ -28,6 +29,13 @@ public class HistoryManager : Singleton<HistoryManager>
     {
         get => deltaUpdate;
         set => deltaUpdate = value;
+    }
+
+    // 是否已经与后端同步数据
+    public bool Synced
+    {
+        get => synced;
+        set => synced = value;
     }
 
     public string HistoryUid
@@ -52,6 +60,11 @@ public class HistoryManager : Singleton<HistoryManager>
         {
             historyData = value;
         }
+    }
+
+    public void ClearLastMessage()
+    {
+        assistantLastMessage.content = string.Empty;
     }
 
     public void UpdateHistoryList()

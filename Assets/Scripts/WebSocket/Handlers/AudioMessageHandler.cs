@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -50,11 +51,13 @@ public class AudioMessageHandler : InitOnceSingleton<AudioMessageHandler>
                 _displayText.text = $"\nAI: {msg.display_text.text}";
             }
 
+            TextMessageHandler.Instance.State.IsFrontendSynced = false;
             // 记下最后的回复，用于interrupt-signal
             var lastMsg = HistoryManager.Instance.assistantLastMessage;
             lastMsg.content += msg.display_text.text;
             lastMsg.avatar = msg.display_text.avatar;
             lastMsg.name = msg.display_text.name;
+            lastMsg.timestamp = DateTime.Now;
             HistoryManager.Instance.DeltaUpdate = true;
             HistoryManager.Instance.UpdateHistoryData();
 
@@ -81,6 +84,13 @@ public class AudioMessageHandler : InitOnceSingleton<AudioMessageHandler>
                 TryPlayNext();
             }
             
+        }
+        else if (TextMessageHandler.Instance.State.IsBackendSynced)
+        {
+            TextMessageHandler.Instance.State.IsFrontendSynced = true;
+            WebSocketManager.Instance.Send(new WebSocketMessage {
+                type = "frontend-playback-complete"
+            });
         }
     }
 

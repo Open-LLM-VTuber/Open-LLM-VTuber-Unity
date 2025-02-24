@@ -42,15 +42,22 @@ public class WebSocketController : MonoBehaviour
         AudioMessageHandler.Instance.ClearAudioQueue();
         AudioManager.Instance.RemoveAllAudioByType(ECS.AudioType.AssistantVoice);
 
-        // 清空, 下一次继续接收
-        lastMsg.content = string.Empty;
     }
 
     public void Send()
     {
         if (!string.IsNullOrEmpty(inputField.text))
         {
-            Interrupt();
+            if (!TextMessageHandler.Instance.State.IsFrontendSynced)
+            {
+                Interrupt();
+            }
+            TextMessageHandler.Instance.State.IsFrontendSynced = true;
+            TextMessageHandler.Instance.State.IsBackendSynced = false;
+
+            // 清空, 下一次继续接收
+            HistoryManager.Instance.ClearLastMessage();
+
             WebSocketManager.Instance.Send(new TextMessage
             {
                 type = "text-input",

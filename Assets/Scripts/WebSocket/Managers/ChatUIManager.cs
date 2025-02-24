@@ -1,5 +1,4 @@
 using UnityEngine;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -126,7 +125,7 @@ public class ChatUIManager : MonoBehaviour
             yield return new HistoryDataItem
             {
                 role = "ai",
-                timestamp = historyMessages.messages.Last().timestamp,
+                timestamp = lastMsg.timestamp,
                 content = lastMsg.content,
                 name = lastMsg.name,
                 avatar = lastMsg.avatar

@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI;
 
 // Handlers/TextMessageHandler.cs
 public class TextMessageHandler : InitOnceSingleton<TextMessageHandler>
@@ -7,9 +8,8 @@ public class TextMessageHandler : InitOnceSingleton<TextMessageHandler>
     [SerializeField] private TMP_Text _displayText;
 
     // 状态实例
-    private readonly ServerState _serverState = new ();
+    private ServerState _serverState = new ();
 
-    // 提供对状态的只读访问
     public ServerState State => _serverState;
 
     public void Initialize(WebSocketManager wsManager, GameObject dialogPanel)
@@ -18,6 +18,8 @@ public class TextMessageHandler : InitOnceSingleton<TextMessageHandler>
         {
             wsManager.RegisterHandler("full-text", HandleFullText);
             wsManager.RegisterHandler("control", HandleControlText);
+            wsManager.RegisterHandler("backend-synth-complete", HandleBackendSync);
+            wsManager.RegisterHandler("force-new-message", HandleForceNewMessage);
         });
         
         _displayText = dialogPanel.transform.Find("FrostedGlass/Content")?.GetComponent<TMP_Text>();
@@ -33,7 +35,6 @@ public class TextMessageHandler : InitOnceSingleton<TextMessageHandler>
             // 记下最后的回复，用于interrupt-signal
             //HistoryManager.Instance.assistantLastMessage.content += textMsg.text;
         }
-        ScrollToBottom();
     }
 
     private void HandleControlText(WebSocketMessage message)
@@ -45,8 +46,17 @@ public class TextMessageHandler : InitOnceSingleton<TextMessageHandler>
         {
             if (textMsg.text == "interrupt")
             {
-                WebSocketController.Interrupt();
-                _serverState.SetInterrupted(true);
+                if (!State.IsFrontendSynced)
+                {
+                    WebSocketController.Interrupt();
+                }
+                State.IsInterrupted = true;
+
+                State.IsFrontendSynced = true;
+                State.IsBackendSynced = false;
+                // 清空, 下一次继续接收
+                HistoryManager.Instance.ClearLastMessage();
+
             }
             else if (textMsg.text == "mic-audio-end")
             {
@@ -54,21 +64,18 @@ public class TextMessageHandler : InitOnceSingleton<TextMessageHandler>
                 {
                     type = "mic-audio-end"
                 });
-                _serverState.SetInterrupted(false);
-            }
-            else if (textMsg.text == "allow-unity-audio")
-            {
-                _serverState.SetAllowUnityAudio(true);
-            }
-            else if (textMsg.text == "reject-unity-audio")
-            {
-                _serverState.SetAllowUnityAudio(false);
+                State.IsInterrupted = false;
             }
         }
     }
 
-    private void ScrollToBottom()
+    private void HandleBackendSync(WebSocketMessage message)
     {
-        // 实现滚动到底部逻辑
+        State.IsBackendSynced = true;
+    }
+
+    private void HandleForceNewMessage(WebSocketMessage message)
+    {
+
     }
 }

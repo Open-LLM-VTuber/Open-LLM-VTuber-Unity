@@ -67,7 +67,6 @@ public class AudioCapture : MonoBehaviour
             microphoneInput = Microphone.Start(selectedDevice, true, 1, sampleRate); // 1秒缓冲区
             isRecording = true;
             Debug.Log("Recording started with device: " + selectedDevice);
-            WebSocketController.Interrupt();
 
             // 启动协程处理音频块
             StartCoroutine(ProcessAudioBlocks());
