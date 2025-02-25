@@ -19,6 +19,7 @@ public class FadeAnimation : MonoBehaviour
     // 淡入效果
     public void FadeIn()
     {
+        gameObject.SetActive(true);
         // 设置初始透明度为0
         canvasGroup.alpha = 0f;
 
@@ -30,7 +31,7 @@ public class FadeAnimation : MonoBehaviour
     public void FadeOut()
     {
         // 使用DOTween进行淡出
-        canvasGroup.DOFade(0f, fadeOutDuration).SetEase(Ease.OutQuad);
+        canvasGroup.DOFade(0f, fadeOutDuration).SetEase(Ease.OutQuad).OnComplete(() => gameObject.SetActive(false));
     }
 
 }
