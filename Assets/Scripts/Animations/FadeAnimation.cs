@@ -1,11 +1,13 @@
 using DG.Tweening;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class FadeAnimation : MonoBehaviour
 {
     private CanvasGroup canvasGroup;
     public float fadeInDuration = 0.3f;
     public float fadeOutDuration = 0.3f;
+    public bool initActive = true;
 
     void Awake()
     {
@@ -14,6 +16,12 @@ public class FadeAnimation : MonoBehaviour
         {
             canvasGroup = gameObject.AddComponent<CanvasGroup>();
         }
+    }
+
+    void Start()
+    {
+        // 首次加载要先激活，然后再通过deactive隐藏起来，省资源，再显示也不容易出错
+        gameObject.SetActive(initActive);
     }
 
     // 淡入效果
