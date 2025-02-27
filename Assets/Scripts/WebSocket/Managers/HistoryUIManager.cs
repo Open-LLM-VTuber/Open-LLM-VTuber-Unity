@@ -34,6 +34,7 @@ public class HistoryUIManager : MonoBehaviour
         {
             HistoryManager.Instance.OnHistoryListUpdated -= UpdateEntries;
         }
+        ClearParentObjectChildren();
     }
 
     public void UpdateEntries()
@@ -54,6 +55,12 @@ public class HistoryUIManager : MonoBehaviour
         {
             foreach (Transform child in parentObject)
             {
+                var button = child.GetComponent<LongPressButton>();
+                if (button != null)
+                {
+                    button.onShortPress.RemoveAllListeners();
+                    button.onLongPress.RemoveAllListeners();
+                }
                 Destroy(child.gameObject);
             }
         }

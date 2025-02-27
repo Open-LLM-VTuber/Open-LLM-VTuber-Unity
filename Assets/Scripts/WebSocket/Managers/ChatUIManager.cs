@@ -39,6 +39,7 @@ public class ChatUIManager : MonoBehaviour
         {
             HistoryManager.Instance.OnHistoryDataUpdated -= UpdateChatBubbles;
         }
+        ClearParentObjectChildren();
     }
 
     public static void RefreshHistoryData()
@@ -61,6 +62,12 @@ public class ChatUIManager : MonoBehaviour
         {
             foreach (Transform child in parentObject)
             {
+                var button = child.GetComponent<LongPressButton>();
+                if (button != null)
+                {
+                    button.onShortPress.RemoveAllListeners();
+                    button.onLongPress.RemoveAllListeners();
+                }
                 Destroy(child.gameObject);
             }
         }

@@ -11,7 +11,7 @@ public class LongPressButton : MonoBehaviour, IPointerDownHandler, IPointerUpHan
     [SerializeField] private float maxClickDistance = 10f; // 最大允许移动距离（像素）
 
     private Vector2 initialPressPosition; // 按下时的初始位置
-    private ScrollRectFix scrollRectFix; // 父级的 ScrollRect 组件
+    private ScrollRect scrollRect; // 父级的 ScrollRect 组件
 
     public UnityEvent onLongPress; // 长按事件
     public UnityEvent onShortPress; // 短按事件
@@ -19,7 +19,7 @@ public class LongPressButton : MonoBehaviour, IPointerDownHandler, IPointerUpHan
     void Start()
     {
         // 自动查找父级中的 ScrollRect
-        scrollRectFix = GetComponentInParent<ScrollRectFix>();
+        scrollRect = GetComponentInParent<ScrollRect>();
     }
 
     void Update()
@@ -58,10 +58,10 @@ public class LongPressButton : MonoBehaviour, IPointerDownHandler, IPointerUpHan
 
     public void OnBeginDrag(PointerEventData eventData)
     {
-        if (scrollRectFix != null)
+        if (scrollRect != null)
         {
             // 将拖拽事件传递给 ScrollRect
-            scrollRectFix.OnBeginDrag(eventData);
+            scrollRect.OnBeginDrag(eventData);
         }
     }
 
@@ -73,28 +73,28 @@ public class LongPressButton : MonoBehaviour, IPointerDownHandler, IPointerUpHan
             isPressed = false; // 移动距离过大，取消长按检测
         }
 
-        if (scrollRectFix != null)
+        if (scrollRect != null)
         {
             // 将拖拽事件传递给 ScrollRect
-            scrollRectFix.OnDrag(eventData);
+            scrollRect.OnDrag(eventData);
         }
     }
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        if (scrollRectFix != null)
+        if (scrollRect != null)
         {
             // 将拖拽事件传递给 ScrollRect
-            scrollRectFix.OnEndDrag(eventData);
+            scrollRect.OnEndDrag(eventData);
         }
     }
 
     public void OnScroll(PointerEventData eventData)
     {
-        if (scrollRectFix != null)
+        if (scrollRect != null)
         {
             // 将拖拽事件传递给 ScrollRect
-            scrollRectFix.OnScroll(eventData);
+            scrollRect.OnScroll(eventData);
         }
     }
 

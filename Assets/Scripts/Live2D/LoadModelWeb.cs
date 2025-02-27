@@ -7,6 +7,12 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using Newtonsoft.Json;
+using Unity.VisualScripting;
+using Live2D.Cubism.Framework.LookAt;
+using Live2D.Cubism.Samples.OriginalWorkflow.Demo;
+using Live2D.Cubism.Framework.Raycasting;
+using Live2D.Cubism.Core;
+
 
 namespace Live2D 
 {
@@ -45,31 +51,55 @@ namespace Live2D
         [SerializeField] private Sprite removeModelSprite; 
         #endregion
 
-        private List<string> characters;
+        private List<string> loadedModels;
+        private List<ModelInfo> modelInfos;
         private string baseUrl;                            // Base URL from settings
         private string localRoot;                          // Local storage root
+
+        public event Action onModelsInfoLoaded; 
+
+        public List<ModelInfo> ModelInfos {
+            get { return modelInfos; }
+        }
+        public string Character {
+            get { return character; }
+            set { character = value; }
+        }
 
         void Start()
         {
             baseUrl = SettingsManager.Instance.GetSetting("General.BaseUrl").Trim('/');
             localRoot = Application.persistentDataPath;
-            characters = new List<string>();
+            loadedModels = new List<string>();
+            // 默认load一个模型, 设置为character
+            LoadModel();
+        }
+
+        public void RemoveModels()
+        {
+            foreach (Transform child in scrollRect.content.transform)
+            {   
+                var button = child.GetComponent<LongPressButton>();
+                if (button != null)
+                {
+                    button.onShortPress.RemoveAllListeners(); // 移除所有监听器
+                }
+                Destroy(child.gameObject);
+            }
         }
 
         [ContextMenu("ShowModels")]
         public void ShowModels() 
         {
-            
-            foreach (Transform child in scrollRect.content.transform)
-            {
-                Destroy(child.gameObject);
-            }
+            // 移除先前所有的card
+            RemoveModels();
+            // system card
             AddCharacterCard("添加新模型", addNewModelSprite);
             AddCharacterCard("移除当前模型", removeModelSprite);
 
+            // user card
             string infoUrl = $"{baseUrl}/live2d-models/info";
             StartCoroutine(LoadModelsFromWeb(infoUrl, "live2d-model-info.json"));
-
         }
 
         [ContextMenu("LoadModel")]
@@ -84,23 +114,39 @@ namespace Live2D
 
         public void UnloadModel(string c)
         {
-            if (!string.IsNullOrEmpty(c))
+            if (!string.IsNullOrEmpty(c) && loadedModels.Contains(c)) 
             {
                 GameObject live2dObject = parentObject.transform.Find(c).gameObject;
+                
+                // 释放纹理资源
+                var renderers = live2dObject.GetComponentsInChildren<Renderer>();
+                foreach (var renderer in renderers)
+                {
+                    if (renderer.material != null)
+                    {
+                        Texture2D texture = renderer.material.mainTexture as Texture2D;
+                        if (texture != null)
+                        {
+                            Resources.UnloadAsset(texture);
+                        }
+                        Destroy(renderer.material);
+                    }
+                }
+
                 Destroy(live2dObject);
-                characters.Remove(c);
+                loadedModels.Remove(c);
             }
         }
 
         [ContextMenu("UnloadModels")]
         public void UnloadModels()
         {
-            var tmps = new List<string>(characters);
+            var tmps = new List<string>(loadedModels);
             foreach (string character in tmps)
             {
                 UnloadModel(character);
             }
-            characters.Clear();
+            loadedModels.Clear();
         }
 
         private IEnumerator LoadModelsFromWeb(string infoUrl, string fileName) 
@@ -115,26 +161,35 @@ namespace Live2D
                 Debug.LogError("Failed to parse live2d-models JSON");
             }
             Debug.Log($"Found: {info.count} models");
-
-            foreach (var character in info.characters)
+            modelInfos = new (info.characters);
+            
+            foreach (var modelInfo in modelInfos)
             {
-                AddCharacterCard(character);
+                AddCharacterCard(modelInfo);
             }
+            onModelsInfoLoaded?.Invoke();
         }
 
-        private void AddCharacterCard(ModelInfo character)
+        private void AddCharacterCard(ModelInfo modelInfo)
         {
             var card = Instantiate(characterCardPrefab, scrollRect.content.transform);
                 
             var textObj = card.GetComponentInChildren<TMP_Text>();
-            textObj.text = character.name; // 设置名称
+            textObj.text = modelInfo.name; // 设置名称
 
-            if (character.avatar != null) {
-                var avatarUrl = $"{baseUrl}/{character.avatar}";
+            if (modelInfo.avatar != null) {
+                var avatarUrl = $"{baseUrl}/{modelInfo.avatar}";
                 var avatarManager = card.GetComponent<AvatarManager>();
-                var folderPath = Path.Combine(localRoot, "live2d-models", character.name);
+                var folderPath = Path.Combine(localRoot, "live2d-models", modelInfo.name);
                 avatarManager.SetAvatar(avatarUrl, folderPath);
             }
+
+            var button = card.GetComponent<LongPressButton>();
+            button.onShortPress.AddListener(() => {
+                UnloadModel(character);
+                character = modelInfo.name;
+                LoadModel();
+            });
         }
 
         private void AddCharacterCard(string c_name, Sprite sprite)
@@ -144,6 +199,17 @@ namespace Live2D
             textObj.text = c_name;
             var avatarManager = card.GetComponent<AvatarManager>();
             avatarManager.avatarImage.sprite = sprite;
+            var button = card.GetComponent<LongPressButton>();
+            if (c_name.Contains("添加")) {
+                button.onShortPress.AddListener(() => {
+                    Debug.Log("请到后端live2d-models文件夹下手动放入模型文件夹");
+                });
+            }
+            else if (c_name.Contains("移除")) {
+                button.onShortPress.AddListener(() => {
+                    UnloadModels();
+                });
+            }
         }
         
 
@@ -174,11 +240,8 @@ namespace Live2D
 
             if (model != null)
             {
-                Transform t = model.transform;
-                t.parent = parentObject.transform;
-                t.localPosition = position;
-                t.localScale = scale;
-                characters.Add(name);
+                postInitModel(model);
+                loadedModels.Add(name);
                 Debug.Log("Live2D Model Loaded Successfully!");
             }
             else
@@ -186,6 +249,24 @@ namespace Live2D
                 Debug.LogError("Failed to instantiate Live2D Model");
             }
             
+        }
+
+        private void postInitModel(CubismModel model)
+        {
+            Transform t = model.transform;
+            t.parent = parentObject.transform;
+            t.localPosition = position;
+            t.localScale = scale;
+            var cubismLookTarget = model.AddComponent<CubismLookTarget>();
+            cubismLookTarget.Center = t;
+            var cubismLookController = model.AddComponent<CubismLookController>();
+            cubismLookController.Center = t;
+            cubismLookController.Target = cubismLookTarget;
+            var cubismRaycastable = model.AddComponent<CubismRaycastable>();  
+            cubismRaycastable.Precision = CubismRaycastablePrecision.Triangles;
+            model.AddComponent<CanvasRenderer>();
+            model.AddComponent<DragAndDrop>();
+            model.AddComponent<CharAnim>();
         }
 
         private IEnumerator DownloadReferencedFiles(CubismModel3Json modelJson)
