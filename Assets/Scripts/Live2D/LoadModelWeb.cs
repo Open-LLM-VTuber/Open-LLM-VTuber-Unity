@@ -40,7 +40,9 @@ namespace Live2D
         #region  Horizontal Scroll View
         [Header("Horizontal Scroll View")]
         [SerializeField] private ScrollRect scrollRect;
-        [SerializeField] private GameObject characterCardPrefab;             
+        [SerializeField] private GameObject characterCardPrefab;
+        [SerializeField] private Sprite addNewModelSprite; 
+        [SerializeField] private Sprite removeModelSprite; 
         #endregion
 
         private List<string> characters;
@@ -57,6 +59,14 @@ namespace Live2D
         [ContextMenu("ShowModels")]
         public void ShowModels() 
         {
+            
+            foreach (Transform child in scrollRect.content.transform)
+            {
+                Destroy(child.gameObject);
+            }
+            AddCharacterCard("添加新模型", addNewModelSprite);
+            AddCharacterCard("移除当前模型", removeModelSprite);
+
             string infoUrl = $"{baseUrl}/live2d-models/info";
             StartCoroutine(LoadModelsFromWeb(infoUrl, "live2d-model-info.json"));
 
@@ -106,27 +116,36 @@ namespace Live2D
             }
             Debug.Log($"Found: {info.count} models");
 
-            foreach (Transform child in scrollRect.content.transform)
-            {
-                Destroy(child.gameObject);
-            }
-
             foreach (var character in info.characters)
             {
-                var card = Instantiate(characterCardPrefab, scrollRect.content.transform);
-                
-                var textObj = card.GetComponentInChildren<TMP_Text>();
-                textObj.text = character.name; // 设置名称
-
-                if (character.avatar != null) {
-                    var avatarUrl = $"{baseUrl}/{character.avatar}";
-                    var avatarManager = card.GetComponent<AvatarManager>();
-                    var folderPath = Path.Combine(localRoot, "live2d-models", character.name);
-                    avatarManager.SetAvatar(avatarUrl, folderPath);
-                }
-
+                AddCharacterCard(character);
             }
         }
+
+        private void AddCharacterCard(ModelInfo character)
+        {
+            var card = Instantiate(characterCardPrefab, scrollRect.content.transform);
+                
+            var textObj = card.GetComponentInChildren<TMP_Text>();
+            textObj.text = character.name; // 设置名称
+
+            if (character.avatar != null) {
+                var avatarUrl = $"{baseUrl}/{character.avatar}";
+                var avatarManager = card.GetComponent<AvatarManager>();
+                var folderPath = Path.Combine(localRoot, "live2d-models", character.name);
+                avatarManager.SetAvatar(avatarUrl, folderPath);
+            }
+        }
+
+        private void AddCharacterCard(string c_name, Sprite sprite)
+        {
+            var card = Instantiate(characterCardPrefab, scrollRect.content.transform);
+            var textObj = card.GetComponentInChildren<TMP_Text>();
+            textObj.text = c_name;
+            var avatarManager = card.GetComponent<AvatarManager>();
+            avatarManager.avatarImage.sprite = sprite;
+        }
+        
 
         private IEnumerator LoadModelFromWeb(string modelUrl)
         {
