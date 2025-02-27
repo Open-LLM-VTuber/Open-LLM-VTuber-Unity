@@ -69,13 +69,20 @@ public class AvatarManager : MonoBehaviour
     /// <summary>
     /// 下载并设置头像图片
     /// </summary>
-    private void SetAvatar(string url)
+    public void SetAvatar(string url, string folderPath = null)
     {
+        
         HttpDownloader.Instance.Download(url, result =>
         {
             if (result.Success)
             {
-                StartCoroutine(LoadAndProcessImage(result.FilePath));
+                var targetPath = result.FilePath;
+                if (folderPath != null) {
+                    Directory.CreateDirectory(folderPath ?? "");
+                    targetPath = Path.Combine(folderPath, Path.GetFileName(result.FilePath));
+                    MoveFile(result.FilePath, targetPath);
+                }
+                StartCoroutine(LoadAndProcessImage(targetPath));
             }
             else
             {
@@ -139,5 +146,25 @@ public class AvatarManager : MonoBehaviour
     private Sprite TextureToSprite(Texture2D texture)
     {
         return Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+    }
+
+    private static void MoveFile(string source, string dest)
+    {
+        try
+        {
+            if (File.Exists(dest))
+            {
+                File.Delete(dest);
+            }
+
+            if (File.Exists(source))
+            {
+                File.Move(source, dest);
+            }
+        }
+        catch (IOException ex)
+        {
+            Debug.LogWarning($"Move failed: {source} to {dest}: {ex.Message}");
+        }
     }
 }

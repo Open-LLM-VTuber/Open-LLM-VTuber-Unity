@@ -3,7 +3,6 @@ using UnityEngine.Networking;
 using System.Collections;
 using System.IO;
 using System;
-using Unity.VisualScripting;
 
 public class HttpDownloader : InitOnceSingleton<HttpDownloader>
 {
@@ -11,16 +10,23 @@ public class HttpDownloader : InitOnceSingleton<HttpDownloader>
     // 下载方法，接受 URL 和回调函数
     public void Download(string url, Action<DownloadResult> callback)
     {
-        StartCoroutine(DownloadCoroutine(url, callback));
+        StartCoroutine(DownloadCoroutine(url, callback: callback));
+    }
+
+    public void Download(string url, string fileName, Action<DownloadResult> callback)
+    {
+        StartCoroutine(DownloadCoroutine(url, fileName, callback));
     }
 
     // 下载协程，处理异步下载逻辑
-    private IEnumerator DownloadCoroutine(string url, Action<DownloadResult> callback)
+    private IEnumerator DownloadCoroutine(string url, string fileName = null, Action<DownloadResult> callback = null)
     {
         // 从 URL 中提取文件名，并组合保存路径
-        string fileName = Path.GetFileName(url);
+        if (fileName == null) {
+            fileName = Path.GetFileName(url);
+        }
+        
         string filePath = Path.Combine(Application.persistentDataPath, "tmp", fileName);
-
         // 确保目录存在
         string directory = Path.GetDirectoryName(filePath);
         if (!Directory.Exists(directory))
