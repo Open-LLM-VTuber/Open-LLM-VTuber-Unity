@@ -46,7 +46,6 @@ namespace Live2D {
                 }
             }
 
-            Debug.Log($"Initialized currentModelIndex: {currentModelIndex}");
         }
 
         private void OnLeftButtonClick()

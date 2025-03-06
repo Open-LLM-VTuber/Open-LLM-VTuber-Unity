@@ -12,6 +12,10 @@ using Live2D.Cubism.Framework.LookAt;
 using Live2D.Cubism.Samples.OriginalWorkflow.Demo;
 using Live2D.Cubism.Framework.Raycasting;
 using Live2D.Cubism.Core;
+using Live2D.Cubism.Framework.MotionFade;
+using Live2D.Cubism.Framework;
+using Live2D.Cubism.Framework.Expression;
+using Live2D.Cubism.Framework.Pose;
 
 
 namespace Live2D 
@@ -228,7 +232,7 @@ namespace Live2D
 
             Debug.LogWarning($"jsonPath: {jsonPath}");
 
-            var modelJson = CubismModel3Json.LoadAtPath(jsonPath, LoadAssetAtPath);
+            var modelJson = CubismModel3Json.LoadAtPath(jsonPath, FileManager.LoadAssetAtPath);
             if (modelJson == null)
             {
                 Debug.LogError("Failed to parse model JSON");
@@ -240,7 +244,7 @@ namespace Live2D
 
             if (model != null)
             {
-                postInitModel(model);
+                PostInitModel(model, jsonPath);
                 loadedModels.Add(name);
                 Debug.Log("Live2D Model Loaded Successfully!");
             }
@@ -248,25 +252,44 @@ namespace Live2D
             {
                 Debug.LogError("Failed to instantiate Live2D Model");
             }
-            
+            onModelsInfoLoaded?.Invoke();
         }
 
-        private void postInitModel(CubismModel model)
+        private void PostInitModel(CubismModel model, string model3JsonPath)
         {
+            #region Unity Part
             Transform t = model.transform;
             t.parent = parentObject.transform;
             t.localPosition = position;
             t.localScale = scale;
+            #endregion
+
+            #region Live2D Part
             var cubismLookTarget = model.AddComponent<CubismLookTarget>();
             cubismLookTarget.Center = t;
             var cubismLookController = model.AddComponent<CubismLookController>();
             cubismLookController.Center = t;
             cubismLookController.Target = cubismLookTarget;
             var cubismRaycastable = model.AddComponent<CubismRaycastable>();  
-            cubismRaycastable.Precision = CubismRaycastablePrecision.Triangles;
+            cubismRaycastable.Precision = CubismRaycastablePrecision.BoundingBox; // Triangles
+            model.AddComponent<CubismRaycaster>();  
+
+            model.AddComponent<CubismUpdateController>();
+            model.AddComponent<CubismFadeController>();
+            model.AddComponent<CubismPoseController>();
+            var expressionController = model.AddComponent<CubismExpressionController>();
+
+            var animatorSetup = model.AddComponent<DynamicAnimatorSetup>();
+            animatorSetup.Initialize(model3JsonPath);
+            var expressionSetup = model.AddComponent<DynamicExpressionSetup>();
+            expressionSetup.Initialize(model3JsonPath, expressionController);  
+            #endregion
+
+            #region Custom Part
             model.AddComponent<CanvasRenderer>();
-            model.AddComponent<DragAndDrop>();
-            model.AddComponent<CharAnim>();
+            model.AddComponent<RaycastHit>();
+            model.AddComponent<DragController>();
+            #endregion
         }
 
         private IEnumerator DownloadReferencedFiles(CubismModel3Json modelJson)
@@ -331,7 +354,7 @@ namespace Live2D
             {
                 if (r.Success && r.FilePath != localPath)
                 {
-                    MoveFile(r.FilePath, localPath);
+                    FileManager.MoveFile(r.FilePath, localPath);
                     r.FilePath = localPath;
                 }
                 result = r;
@@ -344,43 +367,6 @@ namespace Live2D
 
         private string LocalPath(string relativePath) =>
             Path.Combine(localRoot, relativePath).Replace("/", Path.DirectorySeparatorChar.ToString());
-
-        private static void MoveFile(string source, string dest)
-        {
-            try
-            {
-                if (File.Exists(dest))
-                {
-                    File.Delete(dest);
-                }
-
-                if (File.Exists(source))
-                {
-                    File.Move(source, dest);
-                }
-            }
-            catch (IOException ex)
-            {
-                Debug.LogWarning($"Move failed: {source} to {dest}: {ex.Message}");
-            }
-        }
-
-        private static object LoadAssetAtPath(Type type, string path)
-        {
-            if (type == typeof(byte[])) return File.ReadAllBytes(path);
-            else if (type == typeof(string)) return File.ReadAllText(path);
-            else if (type == typeof(Texture2D))
-            {
-                var texture = new Texture2D(1, 1);
-                byte[] bytes = File.ReadAllBytes(path);
-                if (!texture.LoadImage(bytes))
-                {
-                    Debug.LogError($"Failed to load texture at {path}");
-                    return null;
-                }
-                return texture;
-            }
-            throw new NotSupportedException();
-        }
+       
     }
 }
