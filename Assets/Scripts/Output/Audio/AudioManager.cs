@@ -2,7 +2,6 @@ using UnityEngine;
 using ECS;
 using System;
 using System.Collections;
-using System.Threading.Tasks;
 using System.Collections.Generic;
 
 public class AudioManager : InitOnceSingleton<AudioManager>
@@ -62,7 +61,8 @@ public class AudioManager : InitOnceSingleton<AudioManager>
     public int CreateAudioEntity(
         AudioClip clip, 
         bool playOnCreate = true, 
-        ECS.AudioType type = ECS.AudioType.AssistantVoice
+        ECS.AudioType type = ECS.AudioType.AssistantVoice,
+        Action<float[]> onSamplesPlayed = null // Optional delegate for AssistantVoice
     )
     {
         int entity = _entityManager.CreateEntity();
@@ -71,6 +71,7 @@ public class AudioManager : InitOnceSingleton<AudioManager>
             Clip = clip,
             PlayOnCreate = playOnCreate,
             Type = type,
+            OnSamplesPlayed = onSamplesPlayed
         };
         _componentManager.AddComponent(entity, audioComp);
 
@@ -84,19 +85,18 @@ public class AudioManager : InitOnceSingleton<AudioManager>
         return entity;
     }
 
-    public int CreateAudioEntityFromBase64(string base64, bool playOnCreate = true)
+    public int CreateAudioEntityFromBase64(string base64, bool playOnCreate = true, Action<float[]> onSamplesPlayed = null)
     {
         AudioClip clip = Base64AudioClipConverter.ConvertBase64ToAudioClip(base64);
-        return CreateAudioEntity(clip, playOnCreate);
+        return CreateAudioEntity(clip, playOnCreate, ECS.AudioType.AssistantVoice, onSamplesPlayed);
     }
 
-    public void PlayAudio(int entityId, Action onFinishedCallback = null)
+    public void PlayAudio(int entityId, Action onFinishedCallback = null, Action<float[]> onSamplesPlayed = null)
     {
         if (_componentManager.GetComponent<AudioComponent>(entityId) is AudioComponent comp)
         {
-            // 开始播放音频, 通过更改状态让音频播放系统感知到变化
             comp.PlayOnCreate = true;
-            // 使用协程等待音频播放完成
+            comp.OnSamplesPlayed = onSamplesPlayed;
             StartCoroutine(WaitForAudioCompletion(comp, onFinishedCallback));
         }
     }

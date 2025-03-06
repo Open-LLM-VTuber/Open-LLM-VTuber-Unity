@@ -6,9 +6,12 @@ namespace ECS
     public sealed class AudioPlaybackSystem : System
     {
         private const int POOL_SIZE = 2;
+        private const float UPDATE_INTERVAL = 1.0f;
         private readonly Queue<AudioSource> _sourcePool = new Queue<AudioSource>();
         private readonly Dictionary<int, AudioSource> _activeSources = new Dictionary<int, AudioSource>();
+         private Dictionary<int, int> _lastSamplePositions = new Dictionary<int, int>();
         private readonly Transform _audioRoot;
+        private float _lastUpdateTime;
 
         public AudioPlaybackSystem(
             EntityManager em,
@@ -17,6 +20,7 @@ namespace ECS
         ) : base(SystemType.Audio, em, cm)
         {
             _audioRoot = audioRoot.transform;
+            _lastUpdateTime = Time.time;
             InitializePool();
         }
 
@@ -35,8 +39,42 @@ namespace ECS
 
         public override void Update()
         {
-            CleanFinishedSources();
             ProcessAudioRequests();
+
+            // Process per-frame sample callbacks for AssistantVoice
+            ProcessSampleCallbacks();
+                        // Periodic cleanup
+            if (Time.time - _lastUpdateTime >= UPDATE_INTERVAL)
+            {
+                CleanFinishedSources();
+                _lastUpdateTime = Time.time;
+            }   
+        }
+
+        private void ProcessSampleCallbacks()
+        {
+            foreach (var pair in _activeSources)
+            {
+                int entity = pair.Key;
+                var comp = GetComponent<AudioComponent>(entity);
+
+                if (comp != null && comp.IsPlaying && comp.OnSamplesPlayed != null)
+                {
+                    AudioSource source = pair.Value;
+                    int currentSample = source.timeSamples;
+                    int lastSample = _lastSamplePositions.ContainsKey(entity) ? _lastSamplePositions[entity] : 0;
+                    int samplesPlayed = currentSample - lastSample;
+
+                    if (samplesPlayed > 0) // Only process if there’s progress
+                    {
+                        float[] sampleData = new float[samplesPlayed];
+                        comp.Clip.GetData(sampleData, lastSample);
+                        comp.OnSamplesPlayed(sampleData);
+                    }
+
+                    _lastSamplePositions[entity] = currentSample;
+                }
+            }
         }
 
         private void CleanFinishedSources()
@@ -49,6 +87,7 @@ namespace ECS
                 {
                     ReturnSource(pair.Value);
                     finished.Add(pair.Key);
+                    _lastSamplePositions.Remove(pair.Key);
                 }
             }
 
@@ -89,6 +128,7 @@ namespace ECS
             comp.Source = source;
             comp.PlayOnCreate = false;
             _activeSources[entity] = source;
+            _lastSamplePositions[entity] = 0; // Initialize sample position 
         }
 
         private void ConfigureSource(AudioSource source, AudioComponent config)

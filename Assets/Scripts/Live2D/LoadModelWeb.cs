@@ -16,6 +16,7 @@ using Live2D.Cubism.Framework.MotionFade;
 using Live2D.Cubism.Framework;
 using Live2D.Cubism.Framework.Expression;
 using Live2D.Cubism.Framework.Pose;
+using Live2D.Cubism.Framework.MouthMovement;
 
 
 namespace Live2D 
@@ -267,12 +268,36 @@ namespace Live2D
             #region Live2D Part
 
             PostInitModelLookAt(model);
-           
+
+            PostInitModelMouth(model);
+
             PostInitModelRaycast(model);
 
             PostInitModelExpMotion(model, model3JsonPath);
            
             #endregion
+        }
+
+        private void PostInitModelMouth(CubismModel model) 
+        {
+            var mouthController = model.GetComponent<CubismMouthController>();
+            if (mouthController == null) {
+                model.AddComponent<CubismMouthController>();
+            }
+            mouthController.BlendMode = CubismParameterBlendMode.Override;
+            mouthController.MouthOpening = 0f;
+            
+            var ParamMouthUp = model.Parameters.FindById("ParamMouthUp")?.AddComponent<CubismMouthParameter>();
+            if (ParamMouthUp == null) {
+                ParamMouthUp = model.Parameters.FindById("ParamMouthOpenY")?.AddComponent<CubismMouthParameter>();
+            }
+            if (ParamMouthUp == null) {
+                return;
+            }
+            var audioMouthInput = model.AddComponent<MouthInputController>();
+            audioMouthInput.SamplingQuality = CubismAudioSamplingQuality.VeryHigh;
+            audioMouthInput.Gain = 5;
+            audioMouthInput.Smoothing = 0.2f;
         }
 
         private void PostInitModelLookAt(CubismModel model) 

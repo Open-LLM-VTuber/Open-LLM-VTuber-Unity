@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public class AudioMessageHandler : InitOnceSingleton<AudioMessageHandler>
 {
@@ -11,6 +12,8 @@ public class AudioMessageHandler : InitOnceSingleton<AudioMessageHandler>
     private GameObject _dialogPanel;
     private Queue<AudioMessage> audioQueue = new Queue<AudioMessage>();
     private bool isPlaying;
+
+    public event Action<float[]> OnSamplesPlayed;
 
     public void Initialize(WebSocketManager wsManager, GameObject dialogPanel)
     {
@@ -69,7 +72,8 @@ public class AudioMessageHandler : InitOnceSingleton<AudioMessageHandler>
                     isPlaying = false;
                     AudioManager.Instance.RemoveAudio(voiceEntity);
                     TryPlayNext();
-                });
+                }, // AI voice samples, 通过委托转发出去
+                samples => OnSamplesPlayed?.Invoke(samples));
             } 
             else
             {

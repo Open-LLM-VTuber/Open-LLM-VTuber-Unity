@@ -23,6 +23,8 @@ namespace ECS
 
         // 运行时状态
         [NonSerialized] public AudioSource Source;
+         // Delegate for AssistantVoice per-frame sample callback
+        [NonSerialized] public Action<float[]> OnSamplesPlayed;
         public bool IsPlaying => Source != null && Source.isPlaying;
     }
 }
