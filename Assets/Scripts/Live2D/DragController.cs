@@ -56,8 +56,6 @@ namespace Live2D
 
         public void OnPointerDown(PointerEventData eventData)
         {
-            if (!canDrag) return;  // 如果未命中则不响应
-            
             offset = transform.position - GetWorldPosition(eventData);
         }
 

@@ -265,15 +265,59 @@ namespace Live2D
             #endregion
 
             #region Live2D Part
+
+            PostInitModelLookAt(model);
+           
+            PostInitModelRaycast(model);
+
+            PostInitModelExpMotion(model, model3JsonPath);
+           
+            #endregion
+        }
+
+        private void PostInitModelLookAt(CubismModel model) 
+        {
+            Transform t = model.transform;
+            string[] paramIds = { "ParamAngleX", "ParamAngleY", "ParamEyeBallX", "ParamEyeBallY" };
+            float maxFactor = model.Parameters[0].MaximumValue;
+            foreach (var paramId in paramIds)
+            {
+                var param = model.Parameters.FindById(paramId).AddComponent<CubismLookParameter>();
+                if (param.name.EndsWith("Y"))
+                {
+                    param.Axis = CubismLookAxis.Y;
+                }
+                else if (param.name.EndsWith("Z"))
+                {
+                    param.Axis = CubismLookAxis.Z;
+                }
+                else
+                {
+                    param.Axis = CubismLookAxis.X;
+                }
+                param.Factor = maxFactor;
+                
+            }
+
             var cubismLookTarget = model.AddComponent<CubismLookTarget>();
             cubismLookTarget.Center = t;
             var cubismLookController = model.AddComponent<CubismLookController>();
             cubismLookController.Center = t;
             cubismLookController.Target = cubismLookTarget;
+        }
+
+        private void PostInitModelRaycast(CubismModel model)
+        {
             var cubismRaycastable = model.AddComponent<CubismRaycastable>();  
             cubismRaycastable.Precision = CubismRaycastablePrecision.BoundingBox; // Triangles
             model.AddComponent<CubismRaycaster>();  
+            model.AddComponent<CanvasRenderer>();
+            model.AddComponent<RaycastHit>();
+            model.AddComponent<DragController>();
+        }
 
+        private void PostInitModelExpMotion(CubismModel model, string model3JsonPath)
+        {
             model.AddComponent<CubismUpdateController>();
             model.AddComponent<CubismFadeController>();
             model.AddComponent<CubismPoseController>();
@@ -283,13 +327,6 @@ namespace Live2D
             animatorSetup.Initialize(model3JsonPath);
             var expressionSetup = model.AddComponent<DynamicExpressionSetup>();
             expressionSetup.Initialize(model3JsonPath, expressionController);  
-            #endregion
-
-            #region Custom Part
-            model.AddComponent<CanvasRenderer>();
-            model.AddComponent<RaycastHit>();
-            model.AddComponent<DragController>();
-            #endregion
         }
 
         private IEnumerator DownloadReferencedFiles(CubismModel3Json modelJson)
