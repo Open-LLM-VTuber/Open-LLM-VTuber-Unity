@@ -1,7 +1,10 @@
+#if UNITY_EDITOR
 using Live2D.Cubism.Framework.Json;
 using UnityEngine;
+
 using UnityEditor;
 using UnityEditor.Animations;
+
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
@@ -43,6 +46,7 @@ namespace Live2D
             {
                 name = FileManager.GetParentFolderName(modelJsonPath)
             };
+
             controller.AddLayer("BaseLayer");
             AnimatorStateMachine stateMachine = controller.layers[0].stateMachine;
 
@@ -55,12 +59,11 @@ namespace Live2D
             SetupMotionStates(stateMachine);
 
             animator.runtimeAnimatorController = controller;
-#if UNITY_EDITOR
+
             AssetDatabase.CreateAsset(controller, 
                 $"Assets/Animate/{controller.name}.controller"
             );
             AssetDatabase.SaveAssets();
-#endif
             animator.Play("Idle");
         }
 
@@ -216,3 +219,4 @@ namespace Live2D
         }
     }
 }
+#endif
