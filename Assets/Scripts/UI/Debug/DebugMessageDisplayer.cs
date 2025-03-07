@@ -32,6 +32,44 @@ public class DebugMessageDisplayer : MonoBehaviour
             WebSocketManager.Instance.StartCheckingConnection();
     }
 
+    void OnDestroy()
+    {
+        // Unregister this displayer from DebugWrapper
+        if (DebugWrapper.Instance != null)
+        {
+            DebugWrapper.Instance.UnregisterDisplayer(this);
+        }
+
+        // Clean up the current message box if it exists
+        if (currentMessageBox != null)
+        {
+            var controller = currentMessageBox.GetComponent<MessageBoxController>();
+            if (controller != null)
+            {
+                controller.OnSkip -= GoToNextMessage;
+            }
+        }
+
+        // Clean up all pooled message boxes
+        while (messagePool.Count > 0)
+        {
+            GameObject messageBox = messagePool.Dequeue();
+            if (messageBox != null)
+            {
+                var controller = messageBox.GetComponent<MessageBoxController>();
+                if (controller != null)
+                {
+                    controller.OnSkip -= GoToNextMessage;
+                }
+                Destroy(messageBox);
+            }
+        }
+
+        // Clear the queues
+        messagePool.Clear();
+        messageQueue.Clear();
+    }
+    
     private void InitializePool()
     {
         for (int i = 0; i < poolSize; i++)
