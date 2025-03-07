@@ -42,6 +42,9 @@ public class FileManager
 
     public static object? LoadAssetAtPath(Type type, string path)
     {
+        if (string.IsNullOrEmpty(path) || !File.Exists(path)) {
+            return null;
+        }
         if (type == typeof(byte[])) return File.ReadAllBytes(path);
         else if (type == typeof(string)) return File.ReadAllText(path);
         else if (type == typeof(Texture2D))

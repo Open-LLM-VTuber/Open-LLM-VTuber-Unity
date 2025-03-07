@@ -86,7 +86,9 @@ public class AvatarManager : MonoBehaviour
             }
             else
             {
-                Debug.LogError("下载失败: " + result.ErrorMessage);
+                var err = "下载avatar失败: " + result.ErrorMessage;
+                DebugWrapper.Instance.Log(err, Color.red);
+                Debug.LogError(err);
             }
         });
     }

@@ -1,6 +1,5 @@
 using DG.Tweening;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class FadeAnimation : MonoBehaviour
 {
@@ -8,6 +7,11 @@ public class FadeAnimation : MonoBehaviour
     public float fadeInDuration = 0.3f;
     public float fadeOutDuration = 0.3f;
     public bool initActive = true;
+
+    private Tween fadeTween = null; // 保存当前的 Tween 对象，用于检查和中断
+
+    private bool fadingIn = false;
+    private bool fadingOut = false;
 
     void Awake()
     {
@@ -20,26 +24,60 @@ public class FadeAnimation : MonoBehaviour
 
     void Start()
     {
-        // 首次加载要先激活，然后再通过deactive隐藏起来，省资源，再显示也不容易出错
+        // 首次加载要先激活，然后再通过 deactive 隐藏起来，省资源，再显示也不容易出错
         gameObject.SetActive(initActive);
     }
 
     // 淡入效果
     public void FadeIn()
     {
+        
         gameObject.SetActive(true);
-        // 设置初始透明度为0
-        canvasGroup.alpha = 0f;
 
-        // 使用DOTween进行淡入, 播放完动画后触发回调
-        canvasGroup.DOFade(1f, fadeInDuration).SetEase(Ease.InQuad);
+        // 如果当前有动画在播放（比如 FadeOut），立即停止
+        if (fadingOut && fadeTween != null && fadeTween.IsPlaying())
+        {
+            canvasGroup.alpha = 1f;
+            Kill();
+        }
+        else
+        {
+            fadingIn = true;
+            canvasGroup.alpha = 0f;
+            fadeTween = canvasGroup.DOFade(1f, fadeInDuration)
+                .SetEase(Ease.InQuad)
+                .OnComplete(() => {
+                    fadingIn = false;
+                });
+            
+        }
     }
 
     // 淡出效果
     public void FadeOut()
     {
-        // 使用DOTween进行淡出
-        canvasGroup.DOFade(0f, fadeOutDuration).SetEase(Ease.OutQuad).OnComplete(() => gameObject.SetActive(false));
+        fadingOut = true;
+        fadeTween = canvasGroup.DOFade(0f, fadeOutDuration)
+            .SetEase(Ease.OutQuad)
+            .OnComplete(() =>
+            {
+                gameObject.SetActive(false);
+                fadeTween = null;
+                fadingOut = false;
+            });
     }
 
+    void OnDestroy()
+    {
+        if (fadeTween != null)
+        {
+            Kill();
+        }
+    }
+
+    void Kill() {
+        fadeTween.Kill();
+        fadeTween = null;
+        fadingIn = fadingOut = false;
+    }
 }

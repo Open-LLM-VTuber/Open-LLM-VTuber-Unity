@@ -233,7 +233,8 @@ public class SettingsManager : MonoBehaviour
             Debug.LogError($"Unsupported property type '{finalProperty.PropertyType}' for setting: {path}");
         }
 
-        SaveSettings();
+        // 不在这里调用 SaveSettings，让调用者手动决定何时保存到硬盘
+        // SaveSettings();
     }
 
 }

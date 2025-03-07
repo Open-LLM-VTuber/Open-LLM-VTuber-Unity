@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 
 public class DebugMessageDisplayer : MonoBehaviour
 {
@@ -16,7 +17,7 @@ public class DebugMessageDisplayer : MonoBehaviour
 
     public int QueueCount => messageQueue.Count;
 
-    private void Awake()
+    void Awake()
     {
         DebugWrapper.Instance.RegisterDisplayer(this);
         if (messageContainer == null)
@@ -25,9 +26,10 @@ public class DebugMessageDisplayer : MonoBehaviour
         InitializePool();
     }
 
-    private void OnDestroy()
+    void Start()
     {
-        DebugWrapper.Instance.UnregisterDisplayer(this);
+        if (!WebSocketManager.Instance.CheckConnectionStatus())
+            WebSocketManager.Instance.StartCheckingConnection();
     }
 
     private void InitializePool()
@@ -63,14 +65,18 @@ public class DebugMessageDisplayer : MonoBehaviour
         {
             var (message, color) = messageQueue.Dequeue();
             currentMessageBox = messagePool.Count > 0 ? messagePool.Dequeue() : Instantiate(messageBoxPrefab, messageContainer);
-            currentMessageBox.SetActive(true);
-
-            MessageBoxController controller = currentMessageBox.GetComponent<MessageBoxController>();
+            
+            // currentMessageBox.SetActive(true);
+            var fader = currentMessageBox.GetComponent<FadeAnimation>();
+            fader.FadeIn();
+            
+            var controller = currentMessageBox.GetComponent<MessageBoxController>();
             if (controller != null)
             {
                 controller.SetMessage($"<color={color}>{message}</color>", QueueCount);
                 controller.OnSkip += GoToNextMessage; // 注册跳过事件
             }
+            
             lastDisplayTime = Time.time;
         }
     }
@@ -92,6 +98,7 @@ public class DebugMessageDisplayer : MonoBehaviour
             var controller = currentMessageBox.GetComponent<MessageBoxController>();
             if (controller != null)
                 controller.UpdateQueueCount(QueueCount);
+
         }
     }
 
@@ -100,7 +107,10 @@ public class DebugMessageDisplayer : MonoBehaviour
         var controller = messageBox.GetComponent<MessageBoxController>();
         if (controller != null)
             controller.OnSkip -= GoToNextMessage;
-        messageBox.SetActive(false);
+        // currentMessageBox.SetActive(false);
+        var fader = currentMessageBox.GetComponent<FadeAnimation>();
+        fader.FadeOut();
+        
         messagePool.Enqueue(messageBox);
     }
 }

@@ -4,7 +4,13 @@ using System.Collections.Generic;
 
 public class DebugWrapper : Singleton<DebugWrapper>
 {
-    private List<DebugMessageDisplayer> displayers = new List<DebugMessageDisplayer>();
+    private List<DebugMessageDisplayer> displayers;
+    
+    protected override void Awake()
+    {
+        base.Awake();
+        displayers = new ();
+    }
 
     public void RegisterDisplayer(DebugMessageDisplayer displayer)
     {

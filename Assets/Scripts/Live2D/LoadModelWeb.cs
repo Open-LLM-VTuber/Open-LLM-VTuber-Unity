@@ -227,7 +227,9 @@ namespace Live2D
 
             if (jsonPath == null)
             {
-                Debug.LogError($"Failed to download {lastPart}");
+                var err = $"Failed to download {lastPart}";
+                Debug.LogError(err);
+                DebugWrapper.Instance.Log(err, Color.red);
                 yield break;
             }
 
@@ -236,7 +238,9 @@ namespace Live2D
             var modelJson = CubismModel3Json.LoadAtPath(jsonPath, FileManager.LoadAssetAtPath);
             if (modelJson == null)
             {
-                Debug.LogError("Failed to parse model JSON");
+                var err = "Failed to parse model JSON";
+                Debug.LogError(err);
+                DebugWrapper.Instance.Log(err, Color.red);
                 yield break;
             }
             
@@ -247,11 +251,15 @@ namespace Live2D
             {
                 PostInitModel(model, jsonPath);
                 loadedModels.Add(name);
-                Debug.Log("Live2D Model Loaded Successfully!");
+                var msg = "Live2D Model Loaded Successfully!";
+                Debug.Log(msg);
+                DebugWrapper.Instance.Log(msg);
             }
             else
             {
-                Debug.LogError("Failed to instantiate Live2D Model");
+                var err = "Failed to instantiate Live2D Model";
+                Debug.LogError(err);
+                DebugWrapper.Instance.Log(err, Color.red);
             }
             onModelsInfoLoaded?.Invoke();
         }
