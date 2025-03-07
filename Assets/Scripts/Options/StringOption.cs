@@ -1,10 +1,8 @@
 using TMPro;
 using UnityEngine;
 
-public class StringOption : MonoBehaviour
+public class StringOption : BaseOption
 {
-    public string settingKey; // 对应的设置键（例如 "Audio.Mute"）
-
     private TMP_InputField inputField;
 
     void Start()
@@ -13,6 +11,12 @@ public class StringOption : MonoBehaviour
         string settingValue = SettingsManager.Instance.GetSetting(settingKey);
         inputField.text = settingValue;
         OnInputFieldChanged();
+        baseOptions.Add(this);
+    }
+
+    void OnDestroy()
+    {
+        baseOptions.Remove(this);
     }
 
     public void OnInputFieldChanged()

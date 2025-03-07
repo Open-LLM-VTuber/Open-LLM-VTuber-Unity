@@ -90,13 +90,13 @@ public class FPS : MonoBehaviour
             case RuntimePlatform.WindowsPlayer:
             case RuntimePlatform.LinuxPlayer:
             case RuntimePlatform.OSXPlayer:
+            case RuntimePlatform.WindowsEditor:
+            case RuntimePlatform.LinuxEditor:
+            case RuntimePlatform.OSXEditor:
                 Application.targetFrameRate = 120; // PC/Mac设置为 60 FPS
                 Debug.Log("桌面运行设备设置为 120 FPS");
                 break;
-            case RuntimePlatform.WindowsEditor:
-                Application.targetFrameRate = 240; // 开发设置为 240 FPS
-                Debug.Log("桌面开发设备设置为 240 FPS");
-                break;
+
             default:
                 Application.targetFrameRate = -1; // 其他平台不限制帧率
                 Debug.Log("其他设备不限制帧率");

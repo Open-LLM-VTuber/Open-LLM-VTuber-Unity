@@ -25,8 +25,8 @@ public class HttpDownloader : InitOnceSingleton<HttpDownloader>
         if (fileName == null) {
             fileName = Path.GetFileName(url);
         }
-        
-        string filePath = Path.Combine(Application.persistentDataPath, "tmp", fileName);
+        // 下载结果存在临时文件夹
+        string filePath = Path.Combine(Application.temporaryCachePath, "tmp", fileName);
         // 确保目录存在
         string directory = Path.GetDirectoryName(filePath);
         if (!Directory.Exists(directory))

@@ -1,3 +1,5 @@
+using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -7,11 +9,15 @@ public class OpenMessageWindow : MonoBehaviour
     [SerializeField] private Button openButton;
     [SerializeField] private ButtonPressEffect buttonPressEffect;
 
-    [Header("Configuration")]
+    [Header("Single Configuration")]
     [SerializeField] private string titleString = "Select Option";
     [SerializeField] private string introString = "Please choose an option:";
 
-    private void Start()
+    [Header("Multi Configuration")]
+    [SerializeField] private TMP_Text[] Keys;
+    [SerializeField] private TMP_Text[] Values;
+
+    void Start()
     {
 
         if (buttonPressEffect == null)
@@ -25,6 +31,10 @@ public class OpenMessageWindow : MonoBehaviour
 
     }
 
+    void OnDestroy()
+    {
+        buttonPressEffect.OnSpawnComplete -= OnOptionsWindowSpawned;
+    }
     private void OnOptionsWindowSpawned(GameObject optionsWindow)
     {
         // 初始化窗口信息
@@ -39,8 +49,19 @@ public class OpenMessageWindow : MonoBehaviour
             Debug.LogError("PopupWindow component not found on the options window!");
             return;
         }
+
+        if (Keys.Length != Values.Length) {
+            Debug.LogWarning("Keys.Length != Values.Length");
+        }
+        
+        var tempIntro = new string(introString);
+        for (int i = 0; i < Math.Min(Keys.Length, Values.Length); i++) {
+            tempIntro += $"\n{Keys[i].text}: \n{Values[i].text}";
+        }
+
         popupWindowScript.titleString = titleString;
-        popupWindowScript.introString = introString;
+        popupWindowScript.introString = tempIntro;
+
         popupWindowScript.Setup();
     }
 

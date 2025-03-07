@@ -1,0 +1,106 @@
+using UnityEngine;
+using System.Collections.Generic;
+
+public class DebugMessageDisplayer : MonoBehaviour
+{
+    [SerializeField] private GameObject messageBoxPrefab;
+    [SerializeField] private Transform messageContainer;
+    [SerializeField] private int poolSize = 5; // 保留对象池的设计，留作滚动显示
+    [SerializeField] private float displayTime = 3f; // 每条消息显示时间
+
+    private Queue<GameObject> messagePool = new Queue<GameObject>(); // 对象池
+    private Queue<(string message, string color)> messageQueue = new Queue<(string, string)>(); // 消息队列
+    private GameObject currentMessageBox; // 当前显示的消息
+    
+    private float lastDisplayTime; // 上次切换时间
+
+    public int QueueCount => messageQueue.Count;
+
+    private void Awake()
+    {
+        DebugWrapper.Instance.RegisterDisplayer(this);
+        if (messageContainer == null)
+            messageContainer = transform;
+
+        InitializePool();
+    }
+
+    private void OnDestroy()
+    {
+        DebugWrapper.Instance.UnregisterDisplayer(this);
+    }
+
+    private void InitializePool()
+    {
+        for (int i = 0; i < poolSize; i++)
+        {
+            GameObject messageBox = Instantiate(messageBoxPrefab, messageContainer);
+            messageBox.SetActive(false);
+            messagePool.Enqueue(messageBox);
+        }
+    }
+
+    public void EnqueueMessage(string message, string color)
+    {
+        messageQueue.Enqueue((message, color)); // 加入队列
+        if (currentMessageBox == null) // 如果当前没有消息，立即显示
+            ShowNextMessage();
+        else
+            UpdateCurrentMessageCount();
+    }
+
+    private void Update()
+    {
+        if (Time.time - lastDisplayTime >= displayTime)
+        {
+            GoToNextMessage();
+        }
+    }
+
+    private void ShowNextMessage()
+    {
+        if (messageQueue.Count > 0)
+        {
+            var (message, color) = messageQueue.Dequeue();
+            currentMessageBox = messagePool.Count > 0 ? messagePool.Dequeue() : Instantiate(messageBoxPrefab, messageContainer);
+            currentMessageBox.SetActive(true);
+
+            MessageBoxController controller = currentMessageBox.GetComponent<MessageBoxController>();
+            if (controller != null)
+            {
+                controller.SetMessage($"<color={color}>{message}</color>", QueueCount);
+                controller.OnSkip += GoToNextMessage; // 注册跳过事件
+            }
+            lastDisplayTime = Time.time;
+        }
+    }
+
+    private void GoToNextMessage()
+    {
+        if (currentMessageBox != null)
+        {
+            ReturnToPool(currentMessageBox);
+            currentMessageBox = null;
+            ShowNextMessage(); // 立即显示下一条
+        }
+    }
+
+    private void UpdateCurrentMessageCount()
+    {
+        if (currentMessageBox != null)
+        {
+            var controller = currentMessageBox.GetComponent<MessageBoxController>();
+            if (controller != null)
+                controller.UpdateQueueCount(QueueCount);
+        }
+    }
+
+    private void ReturnToPool(GameObject messageBox)
+    {
+        var controller = messageBox.GetComponent<MessageBoxController>();
+        if (controller != null)
+            controller.OnSkip -= GoToNextMessage;
+        messageBox.SetActive(false);
+        messagePool.Enqueue(messageBox);
+    }
+}

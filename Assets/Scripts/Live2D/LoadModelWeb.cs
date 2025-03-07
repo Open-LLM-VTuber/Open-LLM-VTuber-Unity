@@ -74,7 +74,7 @@ namespace Live2D
         void Start()
         {
             baseUrl = SettingsManager.Instance.GetSetting("General.BaseUrl").Trim('/');
-            localRoot = Application.persistentDataPath;
+            localRoot = Application.temporaryCachePath;
             loadedModels = new List<string>();
             // 默认load一个模型, 设置为character
             LoadModel();

@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using DG.Tweening;
 using System;
+using UnityEngine.Events;
 
 
 public class ButtonPressEffect : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
@@ -26,6 +27,8 @@ public class ButtonPressEffect : MonoBehaviour, IPointerDownHandler, IPointerUpH
     public float fadeOutDuration = 0.3f; // 淡出持续时间
 
     public Action<GameObject> OnSpawnComplete; // 实例化完成回调
+
+    public UnityEvent OnClick;
 
     private Vector3 originalScale; // 按钮的原始缩放
     private Vector3 originalLocalPosition; // 按钮的原始本地位置
@@ -76,6 +79,9 @@ public class ButtonPressEffect : MonoBehaviour, IPointerDownHandler, IPointerUpH
         bounceSequence.Join(transform.DOScale(originalScale, releaseDuration).SetEase(Ease.OutBack)); // 恢复到原始大小
 
         bounceSequence.OnComplete(() => {
+
+            OnClick?.Invoke();
+           
             if (spawnOnPress)
             {
                 SpawnTarget();

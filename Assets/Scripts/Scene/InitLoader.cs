@@ -23,6 +23,7 @@ public class InitLoader : MonoBehaviour
             globalManagers.AddComponent<AudioManager>();
             globalManagers.AddComponent<WebSocketManager>();
             globalManagers.AddComponent<SceneTransitionManager>();
+            globalManagers.AddComponent<DebugWrapper>();
 
             GameObject globalHandlers = new GameObject("Global Handlers");
             globalHandlers.AddComponent<TextMessageHandler>();

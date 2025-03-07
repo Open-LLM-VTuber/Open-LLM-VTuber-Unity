@@ -1,9 +1,7 @@
 using UnityEngine;
 
-public class BoolOption : MonoBehaviour
+public class BoolOption : BaseOption
 {
-    public string settingKey; // 对应的设置键（例如 "Audio.Mute"）
-
     private bool _currentState; // 当前状态
     private DrawerAnimation _drawerAnimator;
     private ColorAnimation _colorAnimator;
@@ -28,6 +26,12 @@ public class BoolOption : MonoBehaviour
         {
             Debug.LogError($"Failed to parse setting '{settingKey}' as boolean.");
         }
+        baseOptions.Add(this);
+    }
+
+    void OnDestroy()
+    {
+        baseOptions.Remove(this);
     }
 
     public void Toggle()

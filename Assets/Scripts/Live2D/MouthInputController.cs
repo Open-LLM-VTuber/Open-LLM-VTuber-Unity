@@ -35,9 +35,24 @@ namespace Live2D
         private void OnSamplesPlayed(float[] samples)
         {
             float total = 0f;
-            for (var i = 0; i < samples.Length; ++i)
+            
+            int i = 0;
+            for (; i <= samples.Length - 4; i += 4)
             {
-                var sample = samples[i];
+                float sample0 = samples[i];
+                float sample1 = samples[i + 1];
+                float sample2 = samples[i + 2];
+                float sample3 = samples[i + 3];
+                
+                total += sample0 * sample0;
+                total += sample1 * sample1;
+                total += sample2 * sample2;
+                total += sample3 * sample3;
+            }
+            
+            for (; i < samples.Length; ++i)
+            {
+                float sample = samples[i];
                 total += sample * sample;
             }
 
