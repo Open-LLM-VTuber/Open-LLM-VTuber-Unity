@@ -55,9 +55,12 @@ namespace Live2D
             SetupMotionStates(stateMachine);
 
             animator.runtimeAnimatorController = controller;
-            AssetDatabase.CreateAsset(controller, "Assets/Animate/" + controller.name + ".controller");
+#if UNITY_EDITOR
+            AssetDatabase.CreateAsset(controller, 
+                $"Assets/Animate/{controller.name}.controller"
+            );
             AssetDatabase.SaveAssets();
-
+#endif
             animator.Play("Idle");
         }
 
