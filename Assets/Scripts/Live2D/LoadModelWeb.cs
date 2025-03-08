@@ -352,12 +352,17 @@ namespace Live2D
         private void PostInitModelExpMotion(CubismModel model, string model3JsonPath)
         {
             model.AddComponent<CubismUpdateController>();
-            model.AddComponent<CubismFadeController>();
+            
             model.AddComponent<CubismPoseController>();
             var expressionController = model.AddComponent<CubismExpressionController>();
-#if UNITY_EDITOR
+#if !UNITY_EDITOR
             var animatorSetup = model.AddComponent<DynamicAnimatorSetup>();
             animatorSetup.Initialize(model3JsonPath);
+#else
+            var paramStore = model.AddComponent<CubismParameterStore>();
+            var controller = model.AddComponent<CubismFadeController>();
+            var fadeMotionSetup = model.AddComponent<DynamicFadeMotionSetup>();
+            fadeMotionSetup.Initialize(model3JsonPath);
 #endif
             var expressionSetup = model.AddComponent<DynamicExpressionSetup>();
             expressionSetup.Initialize(model3JsonPath, expressionController);  

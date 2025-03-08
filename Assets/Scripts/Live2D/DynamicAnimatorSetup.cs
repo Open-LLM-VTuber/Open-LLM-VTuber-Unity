@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+#if !UNITY_EDITOR
 using Live2D.Cubism.Framework.Json;
 using UnityEngine;
 
@@ -27,14 +27,6 @@ namespace Live2D
         {
             modelJsonPath = jsonPath;
             StartSetup();
-        }
-
-        void Start()
-        {
-            if (!string.IsNullOrEmpty(modelJsonPath))
-            {
-                StartSetup();
-            }
         }
 
         void StartSetup()

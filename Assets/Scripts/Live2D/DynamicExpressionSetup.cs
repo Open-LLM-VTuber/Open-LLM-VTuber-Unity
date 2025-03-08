@@ -19,15 +19,6 @@ namespace Live2D
             StartSetup(); // 调用初始化逻辑
         }
 
-        void Start()
-        {
-            // 如果已经在 Inspector 中设置了 modelJsonPath，则直接初始化
-            if (!string.IsNullOrEmpty(modelJsonPath))
-            {
-                StartSetup();
-            }
-        }
-
         void StartSetup()
         {
             // 加载 model3.json 并解析表情
