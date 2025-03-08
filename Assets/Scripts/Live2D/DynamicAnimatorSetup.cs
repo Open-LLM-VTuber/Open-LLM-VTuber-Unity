@@ -1,4 +1,4 @@
-#if !UNITY_EDITOR
+#if false
 using Live2D.Cubism.Framework.Json;
 using UnityEngine;
 

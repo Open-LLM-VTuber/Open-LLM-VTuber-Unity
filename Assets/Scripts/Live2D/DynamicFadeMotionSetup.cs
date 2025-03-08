@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+#if true
 using Live2D.Cubism.Framework.Json;
 using Live2D.Cubism.Framework.MotionFade;
 using Live2D.Cubism.Framework.Motion;

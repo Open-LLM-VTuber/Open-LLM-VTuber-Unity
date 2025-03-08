@@ -355,15 +355,15 @@ namespace Live2D
             
             model.AddComponent<CubismPoseController>();
             var expressionController = model.AddComponent<CubismExpressionController>();
-#if !UNITY_EDITOR
+#if false   // For UnityEditor Only
             var animatorSetup = model.AddComponent<DynamicAnimatorSetup>();
             animatorSetup.Initialize(model3JsonPath);
-#else
+#endif
             var paramStore = model.AddComponent<CubismParameterStore>();
             var controller = model.AddComponent<CubismFadeController>();
             var fadeMotionSetup = model.AddComponent<DynamicFadeMotionSetup>();
             fadeMotionSetup.Initialize(model3JsonPath);
-#endif
+
             var expressionSetup = model.AddComponent<DynamicExpressionSetup>();
             expressionSetup.Initialize(model3JsonPath, expressionController);  
         }
