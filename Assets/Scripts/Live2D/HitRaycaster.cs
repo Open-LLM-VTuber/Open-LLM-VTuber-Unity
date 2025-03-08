@@ -6,11 +6,11 @@ using System;
 
 namespace Live2D
 {
-    public class RaycastHit : MonoBehaviour
+    public class HitRaycaster : MonoBehaviour
     {
         private CubismRaycaster Raycaster { get; set; }
         private CubismRaycastHit[] Results { get; set; }
-        public event Action OnRaycastHit;  // 保持原有事件
+        public event Action<int> OnRaycastHit;  // 保持原有事件
         public event Action<bool> OnRaycastStateChanged;  // 新增事件用于传递命中状态
         
         private bool isHit = false;  // 追踪是否命中
@@ -48,7 +48,7 @@ namespace Live2D
                 return;
             }
             
-            OnRaycastHit?.Invoke();
+            OnRaycastHit?.Invoke(hitCount);
         }
     }
 }

@@ -11,11 +11,12 @@ namespace Live2D
         [SerializeField] private string modelJsonPath;
 
         private CubismExpressionController _cubismExpressionController;
+        public CubismExpressionController ExpressionController => _cubismExpressionController;
 
-        public void Initialize(string jsonPath, CubismExpressionController cubismExpressionController)
+        public void Initialize(string jsonPath)
         {
             modelJsonPath = jsonPath;
-            _cubismExpressionController = cubismExpressionController;
+            _cubismExpressionController = GetComponent<CubismExpressionController>();
             StartSetup(); // 调用初始化逻辑
         }
 

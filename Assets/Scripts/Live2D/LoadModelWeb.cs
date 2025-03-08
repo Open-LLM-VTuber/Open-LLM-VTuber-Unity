@@ -279,10 +279,10 @@ namespace Live2D
 
             PostInitModelMouth(model);
 
+            PostInitModelExpMotion(model, model3JsonPath);
+  
             PostInitModelRaycast(model);
 
-            PostInitModelExpMotion(model, model3JsonPath);
-           
             #endregion
         }
 
@@ -315,7 +315,10 @@ namespace Live2D
             float maxFactor = model.Parameters[0].MaximumValue;
             foreach (var paramId in paramIds)
             {
-                var param = model.Parameters.FindById(paramId).AddComponent<CubismLookParameter>();
+                var param = model.Parameters.FindById(paramId)?.AddComponent<CubismLookParameter>();
+                if (param == null) {
+                    continue;
+                }
                 if (param.name.EndsWith("Y"))
                 {
                     param.Axis = CubismLookAxis.Y;
@@ -345,8 +348,11 @@ namespace Live2D
             cubismRaycastable.Precision = CubismRaycastablePrecision.BoundingBox; // Triangles
             model.AddComponent<CubismRaycaster>();  
             model.AddComponent<CanvasRenderer>();
-            model.AddComponent<RaycastHit>();
+            model.AddComponent<HitRaycaster>();
             model.AddComponent<DragController>();
+            
+            var motionController = model.AddComponent<MotionController>();
+            motionController.Initialize(model);
         }
 
         private void PostInitModelExpMotion(CubismModel model, string model3JsonPath)
@@ -354,18 +360,19 @@ namespace Live2D
             model.AddComponent<CubismUpdateController>();
             
             model.AddComponent<CubismPoseController>();
-            var expressionController = model.AddComponent<CubismExpressionController>();
+            model.AddComponent<CubismExpressionController>();
 #if false   // For UnityEditor Only
             var animatorSetup = model.AddComponent<DynamicAnimatorSetup>();
             animatorSetup.Initialize(model3JsonPath);
 #endif
             var paramStore = model.AddComponent<CubismParameterStore>();
             var controller = model.AddComponent<CubismFadeController>();
+
             var fadeMotionSetup = model.AddComponent<DynamicFadeMotionSetup>();
             fadeMotionSetup.Initialize(model3JsonPath);
 
             var expressionSetup = model.AddComponent<DynamicExpressionSetup>();
-            expressionSetup.Initialize(model3JsonPath, expressionController);  
+            expressionSetup.Initialize(model3JsonPath);  
         }
 
         private IEnumerator DownloadReferencedFiles(CubismModel3Json modelJson)

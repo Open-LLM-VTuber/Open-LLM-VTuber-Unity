@@ -9,16 +9,16 @@ namespace Live2D
         IPointerDownHandler, IPointerUpHandler, IDragHandler
     {
         private Vector3 offset;
-
+        private HitRaycaster hitRaycaster;
         private bool canDrag = false;  // 新增：只有raycast命中后才能拖拽
 
         void Start()
         {
             // 订阅RaycastHit的事件
-            var raycastHit = GetComponent<RaycastHit>();
-            if (raycastHit != null)
+            hitRaycaster = GetComponent<HitRaycaster>();
+            if (hitRaycaster != null)
             {
-                raycastHit.OnRaycastStateChanged += SetCanDrag;
+                hitRaycaster.OnRaycastStateChanged += SetCanDrag;
             }
             CreateAuxImageChild();
         }
@@ -26,10 +26,9 @@ namespace Live2D
         void OnDestroy()
         {
             // 取消订阅
-            var raycastHit = GetComponent<RaycastHit>();
-            if (raycastHit != null)
+            if (hitRaycaster != null)
             {
-                raycastHit.OnRaycastStateChanged -= SetCanDrag;
+                hitRaycaster.OnRaycastStateChanged -= SetCanDrag;
             }
         }
 

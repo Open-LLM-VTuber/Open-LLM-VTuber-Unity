@@ -16,6 +16,7 @@ namespace Live2D
         [SerializeField] private string modelJsonPath; // 在 Inspector 中赋值，例如 "Assets/Models/model3.json"
 
         private CubismMotionController _motionController;
+        public CubismMotionController MotionController => _motionController;
         private CubismFadeController _fadeController;
 
         private AnimationClip _loopMotion;
