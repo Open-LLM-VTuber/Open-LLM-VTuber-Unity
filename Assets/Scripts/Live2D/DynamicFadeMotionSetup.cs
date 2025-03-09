@@ -18,10 +18,8 @@ namespace Live2D
         private CubismMotionController _motionController;
         public CubismMotionController MotionController => _motionController;
         private CubismFadeController _fadeController;
-
         private AnimationClip _loopMotion;
-
-        public Dictionary<string, List<AnimationClip>> motionClipsByGroup = new Dictionary<string, List<AnimationClip>>();
+        public Dictionary<string, List<AnimationClip>> motionClipsByGroup = new ();
 
         public void Initialize(string jsonPath)
         {
@@ -47,7 +45,7 @@ namespace Live2D
         private void AnimationEnded(float instanceId)
         {
             // Play loop motion.
-            _motionController.PlayAnimation(_loopMotion, priority:CubismMotionPriority.PriorityIdle);
+            _motionController.PlayAnimation(_loopMotion, priority:CubismMotionPriority.PriorityIdle, isLoop: false);
 
             Debug.Log("Body animation : Play : " + _loopMotion.name);
         }

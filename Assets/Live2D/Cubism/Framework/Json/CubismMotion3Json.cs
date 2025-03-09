@@ -216,14 +216,14 @@ namespace Live2D.Cubism.Framework.Json
             // Create animation clip.
             var animationClip = new AnimationClip
             {
-#if UNITY_EDITOR
-                frameRate = Meta.Fps
+#if true
+                frameRate = Meta.Fps,
+                wrapMode = Meta.Loop
+                  ? WrapMode.Loop
+                  : WrapMode.Default
 #else
                 frameRate = Meta.Fps,
                 legacy = true,
-                wrapMode = (Meta.Loop)
-                  ? WrapMode.Loop
-                  : WrapMode.Default
 #endif
             };
 
@@ -319,7 +319,7 @@ namespace Live2D.Cubism.Framework.Json
                 }
 
 
-#if UNITY_EDITOR
+#if false
                 var curveBinding = new EditorCurveBinding
                 {
                     path = relativePath,
@@ -329,13 +329,16 @@ namespace Live2D.Cubism.Framework.Json
 
 
                 AnimationUtility.SetEditorCurve(animationClip, curveBinding, animationCurve);
-#else
+#else 
+                // UNITY_RUNTIME
+                animationClip.legacy = true;
                 animationClip.SetCurve(relativePath, type, propertyName, animationCurve);
+                animationClip.legacy = false;
 #endif
             }
 
 
-#if UNITY_EDITOR
+#if false
             // Apply settings.
             var animationClipSettings = new AnimationClipSettings
             {
@@ -348,7 +351,7 @@ namespace Live2D.Cubism.Framework.Json
 #endif
 
 
-#if UNITY_EDITOR
+#if false
             // Add animation events from user data.
             if (UserData != null)
             {
@@ -373,6 +376,25 @@ namespace Live2D.Cubism.Framework.Json
                     AnimationUtility.SetAnimationEvents(animationClip, animationEvents.ToArray());
                 }
             }
+#else 
+            // UNITY_RUNTIME
+            // 设置动画事件（运行时直接赋值）
+            if (UserData != null && UserData.Length > 0)
+            {
+                var animationEvents = new List<AnimationEvent>();
+                for (var i = 0; i < UserData.Length; ++i)
+                {
+                    var animationEvent = new AnimationEvent
+                    {
+                        time = UserData[i].Time,
+                        stringParameter = UserData[i].Value,
+                        functionName = "OnCubismUserDataEvent" // 可自定义回调函数名
+                    };
+                    animationEvents.Add(animationEvent);
+                }
+                animationClip.events = animationEvents.ToArray();
+            }
+
 #endif
 
             return animationClip;
