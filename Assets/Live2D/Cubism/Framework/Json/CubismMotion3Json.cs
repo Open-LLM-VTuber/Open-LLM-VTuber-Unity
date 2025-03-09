@@ -220,7 +220,8 @@ namespace Live2D.Cubism.Framework.Json
                 frameRate = Meta.Fps,
                 wrapMode = Meta.Loop
                   ? WrapMode.Loop
-                  : WrapMode.Default
+                  : WrapMode.Default,
+                legacy = false
 #else
                 frameRate = Meta.Fps,
                 legacy = true,
@@ -331,9 +332,9 @@ namespace Live2D.Cubism.Framework.Json
                 AnimationUtility.SetEditorCurve(animationClip, curveBinding, animationCurve);
 #else 
                 // UNITY_RUNTIME
-                animationClip.legacy = true;
+                // animationClip.legacy = true;
                 animationClip.SetCurve(relativePath, type, propertyName, animationCurve);
-                animationClip.legacy = false;
+                // animationClip.legacy = false;
 #endif
             }
 
@@ -388,7 +389,6 @@ namespace Live2D.Cubism.Framework.Json
                     {
                         time = UserData[i].Time,
                         stringParameter = UserData[i].Value,
-                        functionName = "OnCubismUserDataEvent" // 可自定义回调函数名
                     };
                     animationEvents.Add(animationEvent);
                 }

@@ -110,9 +110,6 @@ namespace Live2D
                         CubismMotion3Json motion3Json = CubismMotion3Json.LoadFrom(motion3JsonString);
                         var clip = motion3Json.ToAnimationClip(poseJson: null);
                         clip.name = Path.GetFileNameWithoutExtension(motionFilePath);
-
-                        // 缓存 AnimationClip 到字典
-                        motionClipsByGroup[groupName].Add(clip);
                         // 命名
                         string motionName = Path.GetFileName(motionFilePath);
 
@@ -123,6 +120,9 @@ namespace Live2D
                             motionName,
                             fadeMotionList
                         );
+
+                         // 缓存 AnimationClip 到字典
+                        motionClipsByGroup[groupName].Add(clip);
                     }
 
                     // 存储Idle动画

@@ -1,356 +1,222 @@
-﻿/**
- * Copyright(c) Live2D Inc. All rights reserved.
- *
- * Use of this source code is governed by the Live2D Open Software license
- * that can be found at https://www.live2d.com/eula/live2d-open-software-license-agreement_en.html.
- */
-
-
-using Live2D.Cubism.Core;
-using Live2D.Cubism.Framework.MotionFade;
+﻿using Live2D.Cubism.Framework.MotionFade;
 using System;
 using UnityEngine;
-using UnityEngine.Animations;
-using UnityEngine.Playables;
 
 
 namespace Live2D.Cubism.Framework.Motion
 {
-    /// <summary>
-    /// Cubism motion controller.
-    /// </summary>
-    [RequireComponent(typeof(CubismFadeController))]
-    public class CubismMotionController : MonoBehaviour
+    [RequireComponent(typeof(CubismFadeController), typeof(Animator))]
+    public class CubismMotionController : MonoBehaviour 
     {
         #region Action
 
-        /// <summary>
-        /// Action animation end handler.
-        /// </summary>
         [SerializeField]
         public Action<float> AnimationEndHandler;
 
-        /// <summary>
-        /// Action OnAnimationEnd.
-        /// </summary>
         private void OnAnimationEnd(int layerIndex, float instanceId)
         {
             _motionPriorities[layerIndex] = CubismMotionPriority.PriorityNone;
-
-            if (AnimationEndHandler != null)
-            {
-                AnimationEndHandler(instanceId);
-            }
+            AnimationEndHandler?.Invoke(instanceId);
         }
 
         #endregion
 
         #region Variable
 
-        /// <summary>
-        /// Layer count.
-        /// </summary>
         public int LayerCount = 1;
 
-        /// <summary>
-        /// List of cubism fade motion.
-        /// </summary>
         private CubismFadeMotionList _cubismFadeMotionList;
-
-        /// <summary>
-        /// Motion controller is active.
-        /// </summary>
         private bool _isActive = false;
 
-        /// <summary>
-        /// Playable graph controller.
-        /// </summary>
-        private PlayableGraph _playableGrap;
+        private Animator _parentAnimator;
+        private Animator _animator;
+        private AnimatorOverrideController _overrideController;
 
-        /// <summary>
-        /// Playable output.
-        /// </summary>
-        private AnimationPlayableOutput _playableOutput;
-
-        /// <summary>
-        /// Animation layer mixer.
-        /// </summary>
-        private AnimationLayerMixerPlayable _layerMixer;
-
-        /// <summary>
-        /// Cubism motion layers.
-        /// </summary>
         private CubismMotionLayer[] _motionLayers;
-
-        /// <summary>
-        /// Cubism motion priorities.
-        /// </summary>
         private int[] _motionPriorities;
-
-        #endregion Variable
+        #endregion
 
         #region Function
 
-        /// <summary>
-        /// Play animations.
-        /// </summary>
-        /// <param name="clip">Animator clip.</param>
-        /// <param name="layerIndex">layer index.</param>
-        /// <param name="priority">Animation priority</param>
-        /// <param name="isLoop">Animation is loop.</param>
-        /// <param name="speed">Animation speed.</param>
         public void PlayAnimation(AnimationClip clip, int layerIndex = 0, int priority = CubismMotionPriority.PriorityNormal, bool isLoop = true, float speed = 1.0f)
         {
-            // Fail silently...
-            if(!enabled || !_isActive || _cubismFadeMotionList == null || clip == null
-               || layerIndex < 0 || layerIndex >= LayerCount ||
-               ((_motionPriorities[layerIndex] >= priority) && (priority != CubismMotionPriority.PriorityForce)))
+            if (!enabled || !_isActive || _cubismFadeMotionList == null || clip == null
+                || layerIndex < 0 || layerIndex >= LayerCount ||
+                ((_motionPriorities[layerIndex] >= priority) && priority != CubismMotionPriority.PriorityForce))
             {
-                Debug.Log("can't start motion.");
+                Debug.Log("Can't start motion.");
                 return;
             }
 
             _motionPriorities[layerIndex] = priority;
-            _motionLayers[layerIndex].PlayAnimation(clip, isLoop, speed);
+            clip.wrapMode = isLoop ? WrapMode.Loop : WrapMode.Once;
 
-            // Play Playable Graph
-            if(!_playableGrap.IsPlaying())
-            {
-                _playableGrap.Play();
-            }
+            string stateName = $"Layer{layerIndex}";
+            // _motionLayers[layerIndex].PlayAnimation(clip, isLoop, speed);
+            Debug.Log($"Playing clip: {clip.name}, Length: {clip.length}, Loop: {isLoop}, Speed: {speed}");
+
+            _overrideController[stateName] = clip;
+
+            _animator.SetLayerWeight(layerIndex, 1.0f);
+            _animator.speed = speed;
+            _animator.Play(stateName, layerIndex, 0f);
         }
 
-        /// <summary>
-        /// Stop animation.
-        /// </summary>
-        /// <param name="animationIndex">Animator index.</param>
-        /// <param name="layerIndex">layer index.</param>
         public void StopAnimation(int animationIndex, int layerIndex = 0)
         {
-            // Fail silently...
-            if(layerIndex < 0 || layerIndex >= LayerCount)
-            {
-                return;
-            }
-
-            _motionLayers[layerIndex].StopAnimationClip();
+            if (layerIndex < 0 || layerIndex >= LayerCount) return;
+            _motionLayers[layerIndex].StopAnimation(animationIndex);
+            if (_motionLayers[layerIndex].IsFinished) _animator.SetLayerWeight(layerIndex, 0f);
         }
 
-        /// <summary>
-        /// Stop all animation.
-        /// </summary>
         public void StopAllAnimation()
         {
-            for(var i = 0; i < LayerCount; ++i)
+            for (var i = 0; i < LayerCount; ++i)
             {
                 _motionLayers[i].StopAnimationClip();
+                _animator.SetLayerWeight(i, 0f);
             }
         }
 
-        /// <summary>
-        /// Is playing animation.
-        /// </summary>
-        /// <returns>True if the animation is playing.</returns>
         public bool IsPlayingAnimation(int layerIndex = 0)
         {
-            // Fail silently...
-            if(layerIndex < 0 || layerIndex >= LayerCount)
-            {
-                return false;
-            }
-
+            if (layerIndex < 0 || layerIndex >= LayerCount) return false;
             return !_motionLayers[layerIndex].IsFinished;
         }
 
-        /// <summary>
-        /// Set layer weight.
-        /// </summary>
-        /// <param name="layerIndex">layer index.</param>
-        /// <param name="weight">Layer weight.</param>
         public void SetLayerWeight(int layerIndex, float weight)
         {
-            // Fail silently...
-            if(layerIndex <= 0 || layerIndex >= LayerCount)
-            {
-                return;
-            }
-
+            if (layerIndex < 0 || layerIndex >= LayerCount) return;
             _motionLayers[layerIndex].SetLayerWeight(weight);
-            _layerMixer.SetInputWeight(layerIndex, weight);
+            _animator.SetLayerWeight(layerIndex, weight);
         }
 
-        /// <summary>
-        /// Set layer blend type is additive.
-        /// </summary>
-        /// <param name="layerIndex">layer index.</param>
-        /// <param name="isAdditive">Blend type is additive.</param>
         public void SetLayerAdditive(int layerIndex, bool isAdditive)
         {
-            // Fail silently...
-            if(layerIndex <= 0 || layerIndex >= LayerCount)
-            {
-                return;
-            }
-
-            _layerMixer.SetLayerAdditive((uint)layerIndex, isAdditive);
+            if (layerIndex < 0 || layerIndex >= LayerCount) return;
+            _animator.SetLayerWeight(layerIndex, isAdditive ? 1f : 0f);
         }
 
-        /// <summary>
-        /// Set animation speed.
-        /// </summary>
-        /// <param name="layerIndex">layer index.</param>
-        /// <param name="index">index of playing motion list.</param>
-        /// <param name="speed">Animation speed.</param>
         public void SetAnimationSpeed(int layerIndex, int index, float speed)
         {
-            // Fail silently...
-            if(layerIndex < 0 || layerIndex >= LayerCount)
-            {
-                return;
-            }
-
+            if (layerIndex < 0 || layerIndex >= LayerCount) return;
             _motionLayers[layerIndex].SetStateSpeed(index, speed);
+            _animator.speed = speed; // 全局速度，需优化为层级速度
         }
 
-        /// <summary>
-        /// Set animation is loop.
-        /// </summary>
-        /// <param name="layerIndex">layer index.</param>
-        /// <param name="index">Index of playing motion list.</param>
-        /// <param name="isLoop">State is loop.</param>
         public void SetAnimationIsLoop(int layerIndex, int index, bool isLoop)
         {
-            // Fail silently...
-            if(layerIndex < 0 || layerIndex >= LayerCount)
-            {
-                return;
-            }
-
+            if (layerIndex < 0 || layerIndex >= LayerCount) return;
             _motionLayers[layerIndex].SetStateIsLoop(index, isLoop);
         }
 
-        /// <summary>
-        /// Get cubism fade states.
-        /// </summary>
         public ICubismFadeState[] GetFadeStates()
         {
-            if(_motionLayers == null)
+            if (_motionLayers == null)
             {
-                LayerCount = (LayerCount < 1) ? 1 : LayerCount;
+                LayerCount = Mathf.Max(1, LayerCount);
                 _motionLayers = new CubismMotionLayer[LayerCount];
                 _motionPriorities = new int[LayerCount];
             }
-
             return _motionLayers;
         }
 
-        #endregion Function
+        #endregion
 
         #region Unity Events Handling
 
-        /// <summary>
-        /// Called by Unity.
-        /// </summary>
         private void OnEnable()
         {
             _cubismFadeMotionList = GetComponent<CubismFadeController>().CubismFadeMotionList;
-
-            // Fail silently...
-            if(_cubismFadeMotionList == null)
+            if (_cubismFadeMotionList == null)
             {
-                Debug.LogError("CubismMotionController : CubismFadeMotionList doesn't set in CubismFadeController.");
+                Debug.LogError("CubismMotionController: CubismFadeMotionList doesn't set in CubismFadeController.");
                 return;
             }
 
-            // Get Animator.
-            var animator = GetComponent<Animator>();
+            _parentAnimator = transform.parent?.GetComponentInParent<Animator>();
+            _animator = GetComponent<Animator>();
 
-            if (animator.runtimeAnimatorController != null)
+            SyncAnimators();
+            
+            _overrideController = new()
             {
-                Debug.LogWarning("Animator Controller was set in Animator component.");
-                return;
-            }
+                runtimeAnimatorController = _animator.runtimeAnimatorController
+            };
+            _animator.runtimeAnimatorController = _overrideController;
 
             _isActive = true;
 
-            // Disable animator's playablegrap.
-            var graph = animator.playableGraph;
-
-            if(graph.IsValid())
+            if (_motionLayers == null)
             {
-                graph.GetOutput(0).SetWeight(0);
-            }
-
-            // Create Playable Graph.
-#if UNITY_2018_1_OR_NEWER
-            _playableGrap = PlayableGraph.Create("Playable Graph : " + this.FindCubismModel().name);
-#else
-            _playableGrap = PlayableGraph.Create();
-#endif
-            _playableGrap.SetTimeUpdateMode(DirectorUpdateMode.GameTime);
-
-            // Create Playable Output.
-            _playableOutput = AnimationPlayableOutput.Create(_playableGrap, "Animation", animator);
-            _playableOutput.SetWeight(1);
-
-            // Create animation layer mixer.
-            _layerMixer = AnimationLayerMixerPlayable.Create(_playableGrap, LayerCount);
-
-            // Create cubism motion layers.
-            if(_motionLayers == null)
-            {
-                LayerCount = (LayerCount < 1) ? 1 : LayerCount;
+                LayerCount = Mathf.Max(1, LayerCount);
                 _motionLayers = new CubismMotionLayer[LayerCount];
                 _motionPriorities = new int[LayerCount];
             }
 
-            for(var i = 0; i < LayerCount; ++i)
+            for (var i = 0; i < LayerCount; ++i)
             {
-                _motionLayers[i] = CubismMotionLayer.CreateCubismMotionLayer(_playableGrap, _cubismFadeMotionList, i);
+                _motionLayers[i] = CubismMotionLayer.CreateCubismMotionLayer(_cubismFadeMotionList, i);
                 _motionLayers[i].AnimationEndHandler += OnAnimationEnd;
-                _layerMixer.ConnectInput(i, _motionLayers[i].PlayableOutput, 0);
-                _layerMixer.SetInputWeight(i, 1.0f);
-            }
-
-            // Set Playable Output.
-            _playableOutput.SetSourcePlayable(_layerMixer);
-
-        }
-
-        /// <summary>
-        /// Called by Unity.
-        /// </summary>
-        private void OnDisable()
-        {
-            // Destroy _playableGrap.
-            if(_playableGrap.IsValid())
-            {
-                _playableGrap.Destroy();
             }
         }
 
-        /// <summary>
-        /// Called by Unity.
-        /// </summary>
-        private void Update()
+        void SyncAnimators()
         {
-            // Fail silently...
-            if(!_isActive)
+            // 复制控制器
+            _animator.runtimeAnimatorController = _parentAnimator.runtimeAnimatorController;
+
+            // 同步动画状态和层权重
+            for (int layerIndex = 0; layerIndex < _parentAnimator.layerCount; layerIndex++)
             {
-                return;
+                AnimatorStateInfo parentState = _parentAnimator.GetCurrentAnimatorStateInfo(layerIndex);
+                _animator.Play(parentState.fullPathHash, layerIndex, parentState.normalizedTime);
+                _animator.SetLayerWeight(layerIndex, _parentAnimator.GetLayerWeight(layerIndex));
             }
 
-            for( var i = 0; i < _motionLayers.Length; ++i)
-            {
-                _motionLayers[i].Update();
+            // 同步速度
+            _animator.speed = _parentAnimator.speed;
 
-                if (_motionLayers[i].IsFinished)
+            // 同步参数
+            foreach (AnimatorControllerParameter param in _parentAnimator.parameters)
+            {
+                switch (param.type)
                 {
-                    _motionPriorities[i] = 0;
+                    case AnimatorControllerParameterType.Bool:
+                        _animator.SetBool(param.name, _parentAnimator.GetBool(param.name));
+                        break;
+                    case AnimatorControllerParameterType.Float:
+                        _animator.SetFloat(param.name, _parentAnimator.GetFloat(param.name));
+                        break;
+                    case AnimatorControllerParameterType.Int:
+                        _animator.SetInteger(param.name, _parentAnimator.GetInteger(param.name));
+                        break;
+                    case AnimatorControllerParameterType.Trigger:
+                        if (_parentAnimator.GetBool(param.name))
+                            _animator.SetTrigger(param.name);
+                        break;
                 }
             }
+
+            Debug.Log("Animators synchronized successfully!");
         }
 
-        #endregion Unity Events Handling
+        private void OnDisable()
+        {
+            _isActive = false;
+        }
+
+        private void Update()
+        {
+            if (!_isActive) return;
+
+            for (var i = 0; i < _motionLayers.Length; ++i)
+            {
+                _motionLayers[i].Update();
+                if (_motionLayers[i].IsFinished) _motionPriorities[i] = 0;
+            }
+        }
+
+        #endregion
     }
 }
