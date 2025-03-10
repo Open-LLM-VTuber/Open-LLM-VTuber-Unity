@@ -93,7 +93,7 @@ namespace Live2D.Cubism.Framework.MotionFade
             // Get cubism update controller.
             HasUpdateController = (GetComponent<CubismUpdateController>() != null);
 
-            _fadeStates = (ICubismFadeState[])_animator.GetBehaviours<CubismFadeStateObserver>();
+            // _fadeStates = (ICubismFadeState[])_animator.GetBehaviours<CubismFadeStateObserver>();
 
             if ((_fadeStates == null || _fadeStates.Length == 0) && _motionController != null)
             {
