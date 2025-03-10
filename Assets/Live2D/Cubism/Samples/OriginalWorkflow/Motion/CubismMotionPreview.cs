@@ -34,7 +34,7 @@ namespace Live2D.Cubism.Samples.OriginalWorkflow.Motion
 
             _motionController = model.GetComponent<CubismMotionController>();
 
-            _motionController.AnimationEndHandler += PlayIdleAnimation;
+            // _motionController.AnimationEndHandler += PlayIdleAnimation;
 
             if (Animation == null)
             {

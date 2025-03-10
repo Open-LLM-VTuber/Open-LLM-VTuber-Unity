@@ -103,7 +103,7 @@ namespace Live2D.Cubism.Samples.OriginalWorkflow.Demo
 
 
             // Set behavior at the end of animation.
-            _motionController.AnimationEndHandler = AnimationEnded;
+            // _motionController.AnimationEndHandler = AnimationEnded;
 
 
             // Get up to 4 results of collision detection.

@@ -95,16 +95,16 @@ namespace Live2D.Cubism.Framework.MotionFade
 
             // _fadeStates = (ICubismFadeState[])_animator.GetBehaviours<CubismFadeStateObserver>();
 
-            if ((_fadeStates == null || _fadeStates.Length == 0) && _motionController != null)
-            {
-                _fadeStates = _motionController.GetFadeStates();
-            }
+            // if ((_fadeStates == null || _fadeStates.Length == 0) && _motionController != null)
+            // {
+            //     _fadeStates = _motionController.GetFadeStates();
+            // }
 
-            if (_fadeStates == null)
-            {
-                return;
-            }
-            _isFading = new bool[_fadeStates.Length];
+            // if (_fadeStates == null)
+            // {
+            //     return;
+            // }
+            // _isFading = new bool[_fadeStates.Length];
         }
 
         /// <summary>

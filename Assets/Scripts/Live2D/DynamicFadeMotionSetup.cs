@@ -19,7 +19,7 @@ namespace Live2D
         public CubismMotionController MotionController => _motionController;
         private CubismFadeController _fadeController;
         private AnimationClip _loopMotion;
-        public Dictionary<string, List<AnimationClip>> motionClipsByGroup = new ();
+        public Dictionary<string, List<AnimationClip>> motionClipsByGroup;
 
         public void Initialize(string jsonPath)
         {
@@ -29,26 +29,15 @@ namespace Live2D
 
         void StartSetup()
         {
-            
             _fadeController = GetComponent<CubismFadeController>();
             // 加载并设置 FadeMotions
             LoadFadeMotions();
             
             _motionController = gameObject.AddComponent<CubismMotionController>();
-            _motionController.AnimationEndHandler = AnimationEnded;
-            // 需要刷新，_fadeStates = _motionController.GetFadeStates()得到隐藏过程状态
-            _fadeController.Refresh();
-            // 第0个动画结束，开始放Idle动画
-            AnimationEnded(0);
+            // 开始循环放Idle动画
+            _motionController.PlayAnimation(_loopMotion, priority:CubismMotionPriority.PriorityIdle, isLoop: true);
         }
 
-        private void AnimationEnded(float instanceId)
-        {
-            // Play loop motion.
-            _motionController.PlayAnimation(_loopMotion, priority:CubismMotionPriority.PriorityIdle, isLoop: false);
-
-            Debug.Log("Body animation : Play : " + _loopMotion.name);
-        }
     
         /// <summary>
         /// 播放指定组名和索引的动画。
@@ -91,6 +80,7 @@ namespace Live2D
 
                 string modelJsonDir = Path.GetDirectoryName(modelJsonPath);
 
+                motionClipsByGroup = new ();
                 // 加载每个 Motion 并缓存到字典
                 for (int i = 0; i < motions.GroupNames.Length; i++)
                 {
@@ -125,7 +115,7 @@ namespace Live2D
                         motionClipsByGroup[groupName].Add(clip);
                     }
 
-                    // 存储Idle动画
+                    // 存储Idle动画，默认选第一个循环播放
                     if (motionArray.Length > 0 && groupName.Contains("Idle")) {
                         var clip = motionClipsByGroup[groupName].First();
                         _loopMotion = clip;
