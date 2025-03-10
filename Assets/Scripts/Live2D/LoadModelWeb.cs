@@ -48,12 +48,18 @@ namespace Live2D
         [SerializeField] private Vector3 scale;            // Local scale of the model
         #endregion
 
-        #region  Horizontal Scroll View
-        [Header("Horizontal Scroll View")]
-        [SerializeField] private ScrollRect scrollRect;
+        #region  Model Scroll View
+        [Header("Model Scroll View")]
+        [SerializeField] private ScrollRect modelScrollRect;
         [SerializeField] private GameObject characterCardPrefab;
         [SerializeField] private Sprite addNewModelSprite; 
         [SerializeField] private Sprite removeModelSprite; 
+        #endregion
+
+        #region  Motion Scroll View
+        [Header("Motion Scroll View")]
+        public ScrollRect MotionScrollRect;
+        public GameObject MotionCardPrefab;
         #endregion
 
         private List<string> loadedModels;
@@ -82,7 +88,7 @@ namespace Live2D
 
         public void RemoveModels()
         {
-            foreach (Transform child in scrollRect.content.transform)
+            foreach (Transform child in modelScrollRect.content.transform)
             {   
                 var button = child.GetComponent<LongPressButton>();
                 if (button != null)
@@ -177,7 +183,7 @@ namespace Live2D
 
         private void AddCharacterCard(ModelInfo modelInfo)
         {
-            var card = Instantiate(characterCardPrefab, scrollRect.content.transform);
+            var card = Instantiate(characterCardPrefab, modelScrollRect.content.transform);
                 
             var textObj = card.GetComponentInChildren<TMP_Text>();
             textObj.text = modelInfo.name; // 设置名称
@@ -199,7 +205,7 @@ namespace Live2D
 
         private void AddCharacterCard(string c_name, Sprite sprite)
         {
-            var card = Instantiate(characterCardPrefab, scrollRect.content.transform);
+            var card = Instantiate(characterCardPrefab, modelScrollRect.content.transform);
             var textObj = card.GetComponentInChildren<TMP_Text>();
             textObj.text = c_name;
             var avatarManager = card.GetComponent<AvatarManager>();

@@ -3,6 +3,8 @@ using Live2D.Cubism.Framework.Json;
 using Live2D.Cubism.Framework.MotionFade;
 using Live2D.Cubism.Framework.Motion;
 using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
 using System.IO;
 using System.Collections.Generic;
 using System;
@@ -20,6 +22,11 @@ namespace Live2D
         private CubismFadeController _fadeController;
         private AnimationClip _loopMotion;
         public Dictionary<string, List<AnimationClip>> motionClipsByGroup;
+        
+        // UI 相关
+        private ScrollRect motionScrollRect;
+        private GameObject motionCardPrefab;
+        private Dictionary<string, List<Button>> buttonsByGroup;
 
         public void Initialize(string jsonPath)
         {
@@ -27,7 +34,7 @@ namespace Live2D
             StartSetup(); // 调用初始化逻辑
         }
 
-        void StartSetup()
+        private void StartSetup()
         {
             _fadeController = GetComponent<CubismFadeController>();
             // 加载并设置 FadeMotions
@@ -36,13 +43,23 @@ namespace Live2D
             _motionController = gameObject.AddComponent<CubismMotionController>();
             // 开始循环放Idle动画
             PlayIdleAnimation();
+
+            
+            SetupUIComponents();
+            GenerateMotionButtons();
+
         }
 
-        void PlayIdleAnimation()
+        private void OnDestroy()
+        {
+            ClearButtons();
+            motionClipsByGroup.Clear();
+        }
+
+        private void PlayIdleAnimation()
         {
             _motionController.StopAnimation(0);
-            _motionController.PlayAnimation(_loopMotion, priority: CubismMotionPriority.PriorityIdle, 
-                isLoop: true);
+            _motionController.PlayAnimation(_loopMotion, priority: CubismMotionPriority.PriorityIdle, isLoop: true);
         }
     
         /// <summary>
@@ -65,9 +82,7 @@ namespace Live2D
             }
 
             var clip = clips[index];
-            // 播完后回到到Idle
-            _motionController.PlayAnimation(clip, layerIndex, priority, 
-                isLoop, speed: 1, onComplete: () => PlayIdleAnimation());
+            _motionController.PlayAnimation(clip, layerIndex, priority, isLoop, speed: 1, onComplete: PlayIdleAnimation);
         }
 
         /// <summary>
@@ -87,6 +102,7 @@ namespace Live2D
                 fadeMotionList.CubismFadeMotionObjects = new CubismFadeMotionData[0];
 
                 string modelJsonDir = Path.GetDirectoryName(modelJsonPath);
+                motionClipsByGroup = new Dictionary<string, List<AnimationClip>>();
 
                 motionClipsByGroup = new ();
                 // 加载每个 Motion 并缓存到字典
@@ -103,21 +119,17 @@ namespace Live2D
 
                     for (int j = 0; j < motionArray.Length; j++)
                     {
-                        string motionFilePath = Path.Combine(modelJsonDir, motionArray[j].File); // 注意这里改为 motionArray[j]
+                        string motionFilePath = Path.Combine(modelJsonDir, motionArray[j].File);
                         var motion3JsonString = File.ReadAllText(motionFilePath);
                         CubismMotion3Json motion3Json = CubismMotion3Json.LoadFrom(motion3JsonString);
                         var clip = motion3Json.ToAnimationClip(poseJson: null);
                         clip.name = Path.GetFileNameWithoutExtension(motionFilePath);
-                        // 命名
+
                         string motionName = Path.GetFileName(motionFilePath);
 
                         // 创建并添加 FadeMotion
                         CubismFadeMotionRuntimeCreator.CreateFadeMotionForAnimationClip(
-                            clip,
-                            motion3Json,
-                            motionName,
-                            fadeMotionList
-                        );
+                            clip, motion3Json, motionName, fadeMotionList);
 
                          // 缓存 AnimationClip 到字典
                         motionClipsByGroup[groupName].Add(clip);
@@ -140,6 +152,111 @@ namespace Live2D
                 Debug.LogWarning("Motions data in model3.json is invalid or missing.");
             }
         }
+
+        #region UI Management
+
+        private void SetupUIComponents()
+        {
+            var loadModelWeb = transform.parent.GetComponentInParent<LoadModelWeb>();
+            if (loadModelWeb == null)
+            {
+                Debug.LogError("LoadModelWeb component not found in parent hierarchy.");
+                return;
+            }
+
+            motionScrollRect = loadModelWeb.MotionScrollRect;
+            motionCardPrefab = loadModelWeb.MotionCardPrefab;
+            buttonsByGroup = new Dictionary<string, List<Button>>();
+
+            if (motionScrollRect == null || motionCardPrefab == null)
+            {
+                Debug.LogError("Motion ScrollRect, Card Prefab, or Content is not assigned in LoadModelWeb.");
+            }
+        }
+
+        private void GenerateMotionButtons()
+        {
+            // Early return with null check
+            if (motionScrollRect == null || motionCardPrefab == null) return;
+
+            ClearButtons(); // Clear existing buttons
+
+            // Define colors
+            Color lightGreen = new Color(0.8f, 1f, 0.8f);  // RGB for light green
+            Color lightYellow = new Color(1f, 1f, 0.8f);  // RGB for light yellow
+
+            foreach (var group in motionClipsByGroup)
+            {
+                string groupName = group.Key;
+                List<AnimationClip> clips = group.Value;
+                var groupButtons = new List<Button>(clips.Count * 2); // Pre-allocate capacity
+
+                for (int index = 0; index < clips.Count; index++)
+                {
+                    // One-time button
+                    Button oneTimeButton = CreateMotionButton(
+                        groupName, 
+                        index, 
+                        false, 
+                        $"(Once):{groupName} [{index}]", 
+                        lightGreen
+                    );
+                    groupButtons.Add(oneTimeButton);
+
+                    // Loop button
+                    Button loopButton = CreateMotionButton(
+                        groupName, 
+                        index, 
+                        true, 
+                        $"(Loop):{groupName} [{index}]", 
+                        lightYellow
+                    );
+                    groupButtons.Add(loopButton);
+                }
+
+                buttonsByGroup[groupName] = groupButtons;
+            }
+        }
+
+        // Helper method to create buttons
+        private Button CreateMotionButton(string groupName, int index, bool isLoop, string text, Color color)
+        {
+            GameObject buttonObj = Instantiate(motionCardPrefab, motionScrollRect.content);
+            Button button = buttonObj.GetComponent<Button>();
+            
+            // Set text
+            var buttonText = buttonObj.GetComponentInChildren<TMP_Text>();
+            buttonText.text = text;
+
+            // Set color
+            if (button.TryGetComponent<Image>(out var buttonImage))
+            {
+                buttonImage.color = color;
+            }
+
+            // Add click listener
+            button.onClick.AddListener(() => PlayMotion(groupName, index, isLoop: isLoop));
+            
+            return button;
+        }
+
+
+        private void ClearButtons()
+        {
+
+            foreach (Transform child in motionScrollRect.content.transform)
+            {   
+                var button = child.GetComponent<Button>();
+                if (button != null)
+                {
+                    button.onClick.RemoveAllListeners(); // 移除所有监听器
+                }
+                Destroy(child.gameObject);
+            }
+
+            buttonsByGroup?.Clear();
+        }
+        #endregion
     }
 
 
