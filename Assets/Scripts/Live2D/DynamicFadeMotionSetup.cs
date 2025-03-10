@@ -243,6 +243,9 @@ namespace Live2D
 
         private void ClearButtons()
         {
+            buttonsByGroup?.Clear();
+
+            if (motionScrollRect == null) return;
 
             foreach (Transform child in motionScrollRect.content.transform)
             {   
@@ -254,7 +257,6 @@ namespace Live2D
                 Destroy(child.gameObject);
             }
 
-            buttonsByGroup?.Clear();
         }
         #endregion
     }
