@@ -35,9 +35,15 @@ namespace Live2D
             
             _motionController = gameObject.AddComponent<CubismMotionController>();
             // 开始循环放Idle动画
-            _motionController.PlayAnimation(_loopMotion, priority:CubismMotionPriority.PriorityIdle, isLoop: true);
+            PlayIdleAnimation();
         }
 
+        void PlayIdleAnimation()
+        {
+            _motionController.StopAnimation(0);
+            _motionController.PlayAnimation(_loopMotion, priority: CubismMotionPriority.PriorityIdle, 
+                isLoop: true);
+        }
     
         /// <summary>
         /// 播放指定组名和索引的动画。
@@ -59,7 +65,9 @@ namespace Live2D
             }
 
             var clip = clips[index];
-            _motionController.PlayAnimation(clip, layerIndex, priority, isLoop);
+            // 播完后回到到Idle
+            _motionController.PlayAnimation(clip, layerIndex, priority, 
+                isLoop, speed: 1, onComplete: () => PlayIdleAnimation());
         }
 
         /// <summary>

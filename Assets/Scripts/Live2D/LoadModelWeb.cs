@@ -207,7 +207,7 @@ namespace Live2D
             var button = card.GetComponent<LongPressButton>();
             if (c_name.Contains("添加")) {
                 button.onShortPress.AddListener(() => {
-                    Debug.Log("请到后端live2d-models文件夹下手动放入模型文件夹");
+                    DebugWrapper.Instance.Log("请到后端live2d-models文件夹下手动放入模型文件夹");
                 });
             }
             else if (c_name.Contains("移除")) {
