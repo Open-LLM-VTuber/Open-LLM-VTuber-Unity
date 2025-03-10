@@ -1,6 +1,8 @@
 ﻿using Live2D.Cubism.Framework.MotionFade;
 using System;
 using UnityEngine;
+using UnityEngine.Playables;
+using UnityEngine.Animations;
 using System.Collections;
 
 namespace Live2D.Cubism.Framework.Motion
@@ -23,6 +25,8 @@ namespace Live2D.Cubism.Framework.Motion
         // 事件委托
         public Action<int, AnimationClip> OnAnimationStart; // 动画开始时触发
         public Action<int, AnimationClip> OnAnimationEnd;   // 动画结束时触发
+
+        private Animation[] layerAnimations;
 
         #endregion
 
@@ -137,11 +141,25 @@ namespace Live2D.Cubism.Framework.Motion
                 Debug.LogError("CubismFadeMotionList is not set in CubismFadeController.");
                 return;
             }
-
-            SyncAnimators();
-            InitializeOverrideController();
+            // SyncAnimators();
+            // InitializeOverrideController();
             InitializeStateArrays();
+            InitializeAnimationComponents();
             isActive = true;
+        }
+
+        private void InitializeAnimationComponents()
+        {
+            layerAnimations = new Animation[layerCount];
+            for (int i = 0; i < layerCount; i++)
+            {
+                Animation anim = gameObject.GetComponent<Animation>();
+                if (anim == null)
+                {
+                    anim = gameObject.AddComponent<Animation>();
+                }
+                layerAnimations[i] = anim;
+            }
         }
 
         private void InitializeComponents()
@@ -213,5 +231,93 @@ namespace Live2D.Cubism.Framework.Motion
         }
 
         #endregion
+    
+        #region Animation Component Methods
+
+        /// <summary>
+        /// 使用 Animation 组件播放旧版动画剪辑，支持优先级和速度。
+        /// </summary>
+        public void PlayLegacyAnimation(AnimationClip legacyClip, int layerIndex = 0, int priority = CubismMotionPriority.PriorityNormal, 
+            bool isLoop = true, float speed = 1.0f, Action onComplete = null)
+        {
+            if (!CanPlayLegacyAnimation(legacyClip, layerIndex, priority))
+            {
+                Debug.LogWarning($"Cannot play legacy animation: {legacyClip?.name} on Layer {layerIndex}");
+                return;
+            }
+
+            SetupLegacyAnimation(legacyClip, layerIndex, priority, isLoop, speed);
+            StartCoroutine(MonitorLegacyAnimation(layerIndex, legacyClip, onComplete));
+        }
+
+        /// <summary>
+        /// 停止指定层的旧版动画。
+        /// </summary>
+        public void StopLegacyAnimation(int layerIndex)
+        {
+            if (!IsValidLayer(layerIndex) || !isLayerPlaying[layerIndex]) return;
+
+            layerAnimations[layerIndex].Stop();
+            ResetLayerState(layerIndex);
+            Debug.Log($"Stopped legacy animation on Layer {layerIndex}");
+        }
+
+        private bool CanPlayLegacyAnimation(AnimationClip clip, int layerIndex, int priority)
+        {
+            return enabled && isActive && clip != null && clip.legacy && IsValidLayer(layerIndex)
+                && (priority == CubismMotionPriority.PriorityForce || motionPriorities[layerIndex] <= priority);
+        }
+
+        private void SetupLegacyAnimation(AnimationClip legacyClip, int layerIndex, int priority, bool isLoop, float speed)
+        {
+            // 设置 Animation 组件状态
+            Animation animation = layerAnimations[layerIndex];
+            animation.playAutomatically = false;
+            animation.Stop(); // 停止当前动画
+
+            // 添加或替换 Clip
+            string clipName = $"Layer{layerIndex}_Legacy_{legacyClip.name}";
+            animation.AddClip(legacyClip, clipName);
+
+            // 配置播放参数
+            AnimationState state = animation[clipName];
+            state.speed = speed;
+            state.wrapMode = isLoop ? WrapMode.Loop : WrapMode.Once;
+
+            // 更新层状态
+            motionPriorities[layerIndex] = priority;
+            shouldLoop[layerIndex] = isLoop;
+            isLayerPlaying[layerIndex] = true;
+
+            // 开始播放
+            animation.Play(clipName);
+
+            OnAnimationStart?.Invoke(layerIndex, legacyClip);
+            Debug.Log($"Playing legacy animation {legacyClip.name} on Layer {layerIndex} | Priority: {priority} | Loop: {isLoop} | Speed: {speed}");
+        }
+
+        private IEnumerator MonitorLegacyAnimation(int layerIndex, AnimationClip legacyClip, Action onComplete)
+        {
+            Animation animation = layerAnimations[layerIndex];
+            AnimationState state = animation[$"Layer{layerIndex}_Legacy_{legacyClip.name}"];
+
+            yield return new WaitForSeconds(legacyClip.length / state.speed);
+
+            if (!shouldLoop[layerIndex] || !isLayerPlaying[layerIndex])
+            {
+                OnAnimationEnd?.Invoke(layerIndex, legacyClip);
+                ResetLayerState(layerIndex);
+                onComplete?.Invoke();
+                Debug.Log($"Legacy animation {legacyClip.name} ended on Layer {layerIndex}");
+            }
+            else
+            {
+                Debug.Log($"Legacy animation {legacyClip.name} looping on Layer {layerIndex}");
+            }
+        }
+
+        #endregion
+
+
     }
 }

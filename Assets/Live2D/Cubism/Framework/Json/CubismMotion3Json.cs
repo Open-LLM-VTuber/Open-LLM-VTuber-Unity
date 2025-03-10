@@ -221,7 +221,7 @@ namespace Live2D.Cubism.Framework.Json
                 wrapMode = Meta.Loop
                   ? WrapMode.Loop
                   : WrapMode.Default,
-                legacy = false
+                legacy = true
 #else
                 frameRate = Meta.Fps,
                 legacy = true,
@@ -332,9 +332,7 @@ namespace Live2D.Cubism.Framework.Json
                 AnimationUtility.SetEditorCurve(animationClip, curveBinding, animationCurve);
 #else 
                 // UNITY_RUNTIME
-                // animationClip.legacy = true;
                 animationClip.SetCurve(relativePath, type, propertyName, animationCurve);
-                // animationClip.legacy = false;
 #endif
             }
 

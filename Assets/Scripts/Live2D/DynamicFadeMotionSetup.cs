@@ -59,7 +59,7 @@ namespace Live2D
         private void PlayIdleAnimation()
         {
             _motionController.StopAnimation(0);
-            _motionController.PlayAnimation(_loopMotion, priority: CubismMotionPriority.PriorityIdle, isLoop: true);
+            _motionController.PlayLegacyAnimation(_loopMotion, priority: CubismMotionPriority.PriorityIdle, isLoop: true);
         }
     
         /// <summary>
@@ -82,7 +82,7 @@ namespace Live2D
             }
 
             var clip = clips[index];
-            _motionController.PlayAnimation(clip, layerIndex, priority, isLoop, speed: 1, onComplete: PlayIdleAnimation);
+            _motionController.PlayLegacyAnimation(clip, layerIndex, priority, isLoop, speed: 1, onComplete: PlayIdleAnimation);
         }
 
         /// <summary>

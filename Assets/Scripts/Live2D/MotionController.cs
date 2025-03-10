@@ -159,7 +159,7 @@ namespace Live2D
             // 随机选择一个动作
             int randomMotionIndex = UnityEngine.Random.Range(0, clips.Count);
             var clip = clips[randomMotionIndex];
-            _motionController.PlayAnimation(clip, layerIndex: 0, priority: 2, isLoop: false);
+            _motionController.PlayLegacyAnimation(clip, layerIndex: 0, priority: 2, isLoop: false);
             Debug.Log($"Randomly playing motion from group '{selectedGroup}' at index {randomMotionIndex}.");
         }
 

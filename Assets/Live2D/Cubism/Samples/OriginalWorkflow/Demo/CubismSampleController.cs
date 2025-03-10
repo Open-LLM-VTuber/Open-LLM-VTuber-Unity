@@ -182,7 +182,7 @@ namespace Live2D.Cubism.Samples.OriginalWorkflow.Demo
 
                             Debug.Log("Tap body : Play : " + _tapBodyMotions[motionIndex].name);
 
-                            _motionController.PlayAnimation(_tapBodyMotions[motionIndex], isLoop: false, priority:CubismMotionPriority.PriorityNormal);
+                            _motionController.PlayLegacyAnimation(_tapBodyMotions[motionIndex], isLoop: false, priority:CubismMotionPriority.PriorityNormal);
                         }
                         // Tap head.
                         else if (hitArea == HitArea.Head)
@@ -214,7 +214,7 @@ namespace Live2D.Cubism.Samples.OriginalWorkflow.Demo
 
                 Debug.Log("Body animation : Play : " + _loopMotion.name);
 
-                _motionController.PlayAnimation(_loopMotion, priority:CubismMotionPriority.PriorityIdle);
+                _motionController.PlayLegacyAnimation(_loopMotion, priority:CubismMotionPriority.PriorityIdle);
             }
         }
 
@@ -226,7 +226,7 @@ namespace Live2D.Cubism.Samples.OriginalWorkflow.Demo
         private void AnimationEnded(float instanceId)
         {
             // Play loop motion.
-            _motionController.PlayAnimation(_loopMotion, priority:CubismMotionPriority.PriorityIdle);
+            _motionController.PlayLegacyAnimation(_loopMotion, priority:CubismMotionPriority.PriorityIdle);
 
             Debug.Log("Body animation : Play : " + _loopMotion.name);
         }
