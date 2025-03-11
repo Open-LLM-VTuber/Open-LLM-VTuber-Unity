@@ -1,3 +1,4 @@
+using Live2D.Cubism.Core;
 using UnityEngine;
 
 namespace Live2D {
@@ -8,6 +9,8 @@ namespace Live2D {
         public GameObject rightButton;   // 向右切换按钮
 
         private LongPressButton left, right;
+
+        
         public int currentModelIndex = 0;
 
         void Start()
@@ -17,6 +20,11 @@ namespace Live2D {
             left.onShortPress.AddListener(OnLeftButtonClick);
             right.onShortPress.AddListener(OnRightButtonClick);
             loadModelWeb.onModelsInfoLoaded += InitCurrentModelIndex;
+            
+        }
+
+        void OnEnable()
+        {
             loadModelWeb.ShowModels();
         }
 

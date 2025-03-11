@@ -44,7 +44,11 @@ namespace Live2D
 
                 for (int i = 0; i < expressions.Length; i++)
                 {
-                    var exp3JsonString = File.ReadAllText(Path.Combine(modelJsonDir, expressions[i].File));
+                    var expJsonPath = Path.Combine(modelJsonDir, expressions[i].File);
+                    if (!File.Exists(expJsonPath)) {
+                        continue;
+                    }
+                    var exp3JsonString = File.ReadAllText(expJsonPath);
                     CubismExp3Json cubismExp3Json = CubismExp3Json.LoadFrom(exp3JsonString);
                     var exp3Instance = CubismExpressionData.CreateInstance(cubismExp3Json);
                     tempExpressionList.Add(exp3Instance);   

@@ -8,27 +8,15 @@ public class HttpDownloader : InitOnceSingleton<HttpDownloader>
 {
    
     // 下载方法，接受 URL 和回调函数
-    public void Download(string url, Action<DownloadResult> callback)
+    public void Download(string url, string absolutePath, Action<DownloadResult> callback = null)
     {
-        StartCoroutine(DownloadCoroutine(url, callback: callback));
-    }
-
-    public void Download(string url, string fileName, Action<DownloadResult> callback)
-    {
-        StartCoroutine(DownloadCoroutine(url, fileName, callback));
+        StartCoroutine(DownloadCoroutine(url, absolutePath, callback));
     }
 
     // 下载协程，处理异步下载逻辑
-    private IEnumerator DownloadCoroutine(string url, string fileName = null, Action<DownloadResult> callback = null)
+    private IEnumerator DownloadCoroutine(string url, string absolutePath, Action<DownloadResult> callback = null)
     {
-        // 从 URL 中提取文件名，并组合保存路径
-        if (fileName == null) {
-            fileName = Path.GetFileName(url);
-        }
-        // 下载结果存在临时文件夹
-        string filePath = Path.Combine(Application.temporaryCachePath, "tmp", fileName);
-        // 确保目录存在
-        string directory = Path.GetDirectoryName(filePath);
+        string directory = Path.GetDirectoryName(absolutePath);
         if (!Directory.Exists(directory))
         {
             Directory.CreateDirectory(directory);
@@ -37,13 +25,13 @@ public class HttpDownloader : InitOnceSingleton<HttpDownloader>
         // 创建下载结果对象
         DownloadResult result = new DownloadResult();
 
-        // 如果文件存在，先(删除) 跳过, unity读取图片时会占用，删不掉
-        if (File.Exists(filePath))
+        // 如果文件存在，跳过, unity读取图片时会占用，删不掉
+        if (File.Exists(absolutePath))
         {
             result.Success = true;
-            result.FilePath = filePath;
-            result.FileSize = new FileInfo(filePath).Length; // 获取文件大小
-            // 调用回调函数，返回结果
+            result.FilePath = absolutePath;
+            result.FileSize = new FileInfo(absolutePath).Length; // 获取文件大小
+            result.CompletionTime = DateTime.Now;           // 记录完成时间
             callback?.Invoke(result);
             yield break;
         }
@@ -52,15 +40,15 @@ public class HttpDownloader : InitOnceSingleton<HttpDownloader>
         using (UnityWebRequest www = UnityWebRequest.Get(url))
         {
             // 设置下载处理器，直接保存到文件
-            www.downloadHandler = new DownloadHandlerFile(filePath);
+            www.downloadHandler = new DownloadHandlerFile(absolutePath);
             yield return www.SendWebRequest();
 
             // 检查下载是否成功
             if (www.result == UnityWebRequest.Result.Success)
             {
                 result.Success = true;
-                result.FilePath = filePath;
-                result.FileSize = new FileInfo(filePath).Length; // 获取文件大小
+                result.FilePath = absolutePath;
+                result.FileSize = new FileInfo(absolutePath).Length; // 获取文件大小
                 result.CompletionTime = DateTime.Now;           // 记录完成时间
             }
             else

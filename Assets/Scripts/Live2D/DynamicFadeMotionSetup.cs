@@ -120,6 +120,9 @@ namespace Live2D
                     for (int j = 0; j < motionArray.Length; j++)
                     {
                         string motionFilePath = Path.Combine(modelJsonDir, motionArray[j].File);
+                        if (!File.Exists(motionFilePath)) {
+                            continue;
+                        }
                         var motion3JsonString = File.ReadAllText(motionFilePath);
                         CubismMotion3Json motion3Json = CubismMotion3Json.LoadFrom(motion3JsonString);
                         var clip = motion3Json.ToAnimationClip(poseJson: null);

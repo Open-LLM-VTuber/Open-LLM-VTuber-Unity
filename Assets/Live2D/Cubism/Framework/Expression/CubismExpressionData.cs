@@ -74,8 +74,13 @@ namespace Live2D.Cubism.Framework.Expression
             expressionData.Type = json.Type;
             expressionData.FadeInTime = json.FadeInTime;
             expressionData.FadeOutTime = json.FadeOutTime;
-            expressionData.Parameters = new SerializableExpressionParameter[json.Parameters.Length];
-
+            if (json.Parameters != null) {
+                expressionData.Parameters = new SerializableExpressionParameter[json.Parameters.Length];
+            }
+            else {
+                return expressionData;
+            }
+            
             for(var i = 0; i < json.Parameters.Length; ++i)
             {
                 expressionData.Parameters[i].Id = json.Parameters[i].Id;

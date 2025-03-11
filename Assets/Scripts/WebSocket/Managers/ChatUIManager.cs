@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.UI;
 using System.Collections;
+using System.IO;
 
 public class ChatUIManager : MonoBehaviour
 {
@@ -93,8 +94,10 @@ public class ChatUIManager : MonoBehaviour
             if (!string.IsNullOrEmpty(message.avatar))
             {
                 string avatarUrl = new UriBuilder(baseUrl) { Path = $"avatars/{message.avatar}" }.ToString();
-                AvatarManager.AddOrUpdateAvatarUrl(message.name, avatarUrl);
-                avatarManager.SetAvatarByName(message.name);
+                var name = Path.GetFileNameWithoutExtension(message.avatar);
+                var absolutePath = Path.Combine(Application.temporaryCachePath, "live2d-models", name, message.avatar);
+                Debug.Log($"avatarUrl: {avatarUrl}, folderPath: {absolutePath}");
+                avatarManager.SetAvatar(avatarUrl, absolutePath);
             }
         }
         

@@ -62,10 +62,13 @@ namespace Live2D
         public GameObject MotionCardPrefab;
         #endregion
 
-        private List<string> loadedModels;
         private List<ModelInfo> modelInfos;
+        private List<string> loadedModels;
         private string baseUrl;                            // Base URL from settings
-        private string localRoot;                          // Local storage root
+
+        [Header("Model Info")]
+        public Scrollbar modelSizeScrollbar;
+        private CubismModel currentModel;
 
         public event Action onModelsInfoLoaded; 
 
@@ -77,12 +80,15 @@ namespace Live2D
             set { character = value; }
         }
 
-        void Start()
+        void Awake()
         {
             baseUrl = SettingsManager.Instance.GetSetting("General.BaseUrl").Trim('/');
-            localRoot = Application.temporaryCachePath;
             loadedModels = new List<string>();
             // 默认load一个模型, 设置为character
+        }
+
+        void Start()
+        {
             LoadModel();
         }
 
@@ -110,7 +116,7 @@ namespace Live2D
 
             // user card
             string infoUrl = $"{baseUrl}/live2d-models/info";
-            StartCoroutine(LoadModelsFromWeb(infoUrl, "live2d-model-info.json"));
+            StartCoroutine(LoadModelsFromWeb(infoUrl, LocalPath("live2d-models/info.json")));
         }
 
         [ContextMenu("LoadModel")]
@@ -119,7 +125,8 @@ namespace Live2D
             if (!string.IsNullOrEmpty(character))
             {
                 string modelUrl = $"{baseUrl}/live2d-models/{character}/{character}.model3.json";
-                StartCoroutine(LoadModelFromWeb(modelUrl));
+                string absolutePath = LocalPath($"live2d-models/{character}/{character}.model3.json");
+                StartCoroutine(LoadModelFromWeb(modelUrl, absolutePath));
             }
         }
 
@@ -160,18 +167,20 @@ namespace Live2D
             loadedModels.Clear();
         }
 
-        private IEnumerator LoadModelsFromWeb(string infoUrl, string fileName) 
+        private IEnumerator LoadModelsFromWeb(string infoUrl, string absolutePath) 
         {
             string jsonPath = null;
-            yield return Download(infoUrl, fileName, r => jsonPath = r.Success ? r.FilePath : null);
+            yield return Download(infoUrl, absolutePath, r => jsonPath = r.Success ? r.FilePath : null);
+            Debug.Log("INFO: " + infoUrl + " " + absolutePath);
             if (jsonPath == null) {
                 yield break;
             }
+            Debug.LogWarning("LoadModelsFromWeb:" + jsonPath);
             var info = JsonConvert.DeserializeObject<Live2DModelsInfo>(File.ReadAllText(jsonPath));
             if (info == null) {
                 Debug.LogError("Failed to parse live2d-models JSON");
             }
-            Debug.Log($"Found: {info.count} models");
+            Debug.LogWarning($"Found: {info.count} models");
             modelInfos = new (info.characters);
             
             foreach (var modelInfo in modelInfos)
@@ -181,8 +190,21 @@ namespace Live2D
             onModelsInfoLoaded?.Invoke();
         }
 
+        
+        public void FitModelSize() 
+        {
+            var scaleFactor = modelSizeScrollbar.value;
+            if (currentModel != null) {
+                currentModel.transform.localScale = scaleFactor * new Vector3(1200, 1200, 0) + new Vector3(0, 0, 1);
+            }
+
+        }
+
         private void AddCharacterCard(ModelInfo modelInfo)
         {
+            if (!modelScrollRect.IsActive()) {
+                return;
+            }
             var card = Instantiate(characterCardPrefab, modelScrollRect.content.transform);
                 
             var textObj = card.GetComponentInChildren<TMP_Text>();
@@ -191,7 +213,8 @@ namespace Live2D
             if (modelInfo.avatar != null) {
                 var avatarUrl = $"{baseUrl}/{modelInfo.avatar}";
                 var avatarManager = card.GetComponent<AvatarManager>();
-                var folderPath = Path.Combine(localRoot, "live2d-models", modelInfo.name);
+                var folderPath = Path.Combine(Application.temporaryCachePath, modelInfo.avatar);
+                Debug.Log($"avatarUrl: {avatarUrl}, folderPath: {folderPath}");
                 avatarManager.SetAvatar(avatarUrl, folderPath);
             }
 
@@ -224,10 +247,10 @@ namespace Live2D
         }
         
 
-        private IEnumerator LoadModelFromWeb(string modelUrl)
+        private IEnumerator LoadModelFromWeb(string modelUrl, string absolutePath)
         {
             string jsonPath = null;
-            yield return Download(modelUrl, r => jsonPath = r.Success ? r.FilePath : null);
+            yield return Download(modelUrl, absolutePath, r => jsonPath = r.Success ? r.FilePath : null);
             string lastPart = Path.GetFileName(modelUrl);
             string name = lastPart.Split('.')[0];
 
@@ -277,6 +300,7 @@ namespace Live2D
             t.parent = parentObject.transform;
             t.localPosition = position;
             t.localScale = scale;
+            currentModel = model;
             #endregion
 
             #region Live2D Part
@@ -298,8 +322,10 @@ namespace Live2D
             if (mouthController == null) {
                 model.AddComponent<CubismMouthController>();
             }
-            mouthController.BlendMode = CubismParameterBlendMode.Override;
-            mouthController.MouthOpening = 0f;
+            if (mouthController != null) {
+                mouthController.BlendMode = CubismParameterBlendMode.Override;
+                mouthController.MouthOpening = 0f;
+            }
             
             var ParamMouthUp = model.Parameters.FindById("ParamMouthUp")?.AddComponent<CubismMouthParameter>();
             if (ParamMouthUp == null) {
@@ -410,41 +436,31 @@ namespace Live2D
             if (string.IsNullOrEmpty(relativePath)) yield break;
 
             string url = $"{baseUrl}/live2d-models/{character}/{relativePath}".Replace("\\", "/");
-            string localPath = LocalPath(relativePath);
+            string absolutePath = LocalPath($"live2d-models/{character}/{relativePath}");
+            Debug.Log($"DownloadIfNeeded: {absolutePath}");
             
-            if (File.Exists(localPath)) yield break;
+            if (File.Exists(absolutePath)) yield break;
 
-            yield return Download(url, r =>
+            yield return Download(url, absolutePath, r =>
             {
                 if (!r.Success)
                     Debug.LogError($"Download failed: {relativePath}: {r.ErrorMessage}");
             });
         }
 
-        private IEnumerator Download(string url, string fileName, Action<DownloadResult> onComplete)
-        {
-            string localPath = LocalPath(fileName);
-            yield return DownloadInternal(url, localPath, onComplete);
-        }
 
-        private IEnumerator Download(string url, Action<DownloadResult> onComplete)
+        private IEnumerator Download(string url, string absolutePath, Action<DownloadResult> onComplete = null)
         {
-            string localPath = LocalPath(url.Replace(baseUrl, "").Trim('/'));
-            yield return DownloadInternal(url, localPath, onComplete);
-        }
-
-        private IEnumerator DownloadInternal(string url, string localPath, Action<DownloadResult> onComplete)
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(localPath) ?? "");
-
+            
             bool done = false;
             DownloadResult result = null;
-            HttpDownloader.Instance.Download(url, r =>
+            HttpDownloader.Instance.Download(url, absolutePath, r =>
             {
-                if (r.Success && r.FilePath != localPath)
+                Directory.CreateDirectory(Path.GetDirectoryName(absolutePath));
+                if (r.Success && r.FilePath != absolutePath)
                 {
-                    FileManager.MoveFile(r.FilePath, localPath);
-                    r.FilePath = localPath;
+                    FileManager.MoveFile(r.FilePath, absolutePath);
+                    r.FilePath = absolutePath;
                 }
                 result = r;
                 done = true;
@@ -455,7 +471,7 @@ namespace Live2D
         }
 
         private string LocalPath(string relativePath) =>
-            Path.Combine(localRoot, relativePath).Replace("/", Path.DirectorySeparatorChar.ToString());
+            Path.Combine(Application.temporaryCachePath, relativePath).Replace("/", Path.DirectorySeparatorChar.ToString());
        
     }
 }
