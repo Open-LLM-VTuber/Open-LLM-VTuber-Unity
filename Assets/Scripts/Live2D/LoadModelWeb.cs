@@ -17,6 +17,7 @@ using Live2D.Cubism.Framework;
 using Live2D.Cubism.Framework.Expression;
 using Live2D.Cubism.Framework.Pose;
 using Live2D.Cubism.Framework.MouthMovement;
+using System.Linq;
 
 
 namespace Live2D 
@@ -27,7 +28,6 @@ namespace Live2D
         public string type;
         public int count;
         public ModelInfo[] characters;
-        
     }
 
     [Serializable]
@@ -40,280 +40,428 @@ namespace Live2D
 
     public class LoadModelWeb : MonoBehaviour
     {
-        # region Display
+        #region Serialized Fields
         [Header("Display")]
-        [SerializeField] private string character;  // Character name for the model
-        [SerializeField] private GameObject parentObject;  // Parent object for the model
-        [SerializeField] private Vector3 position;         // Local position of the model
-        [SerializeField] private Vector3 scale;            // Local scale of the model
-        #endregion
+        [SerializeField] private string character;
+        [SerializeField] private GameObject parentObject;
+        [SerializeField] private Vector3 position = Vector3.zero;
+        [SerializeField] private Vector3 scale = Vector3.one;
 
-        #region  Model Scroll View
         [Header("Model Scroll View")]
         [SerializeField] private ScrollRect modelScrollRect;
         [SerializeField] private GameObject characterCardPrefab;
-        [SerializeField] private Sprite addNewModelSprite; 
-        [SerializeField] private Sprite removeModelSprite; 
-        #endregion
+        [SerializeField] private Sprite addNewModelSprite;
+        [SerializeField] private Sprite removeModelSprite;
 
-        #region  Motion Scroll View
         [Header("Motion Scroll View")]
         public ScrollRect MotionScrollRect;
         public GameObject MotionCardPrefab;
-        #endregion
-
-        private List<ModelInfo> modelInfos;
-        private List<string> loadedModels;
-        private string baseUrl;                            // Base URL from settings
 
         [Header("Model Info")]
-        public Scrollbar modelSizeScrollbar;
+        [SerializeField] private Scrollbar modelSizeScrollbar;
+        #endregion
+
+        #region Private Fields
+        private List<ModelInfo> modelInfos = new List<ModelInfo>();
+        private HashSet<string> loadedModels = new HashSet<string>();
+        private string baseUrl;
+        private float maxModelSize = 2400f;
+        private float scaleFactor = 0.5f;
         private CubismModel currentModel;
+        #endregion
 
-        public event Action onModelsInfoLoaded; 
-
-        public List<ModelInfo> ModelInfos {
-            get { return modelInfos; }
-        }
-        public string Character {
-            get { return character; }
-            set { character = value; }
-        }
-
-        void Awake()
+        #region Properties and Events
+        public event Action OnModelsInfoLoaded;
+        public IReadOnlyList<ModelInfo> ModelInfos => modelInfos.AsReadOnly();
+        public string Character
         {
+            get => character;
+            set => character = value;
+        }
+        #endregion
+
+        #region Unity Methods
+        private void Awake()
+        {
+            character = SettingsManager.Instance.GetSetting("Live2D.CurrentModel");
             baseUrl = SettingsManager.Instance.GetSetting("General.BaseUrl").Trim('/');
-            loadedModels = new List<string>();
-            // 默认load一个模型, 设置为character
+            float.TryParse(SettingsManager.Instance.GetSetting("Live2D.MaxModelSize"), out maxModelSize);
+            float.TryParse(SettingsManager.Instance.GetSetting("Live2D.ScaleFactor"), out scaleFactor);
         }
 
-        void Start()
+        private void Start()
         {
             LoadModel();
         }
+        #endregion
 
-        public void RemoveModels()
-        {
-            foreach (Transform child in modelScrollRect.content.transform)
-            {   
-                var button = child.GetComponent<LongPressButton>();
-                if (button != null)
-                {
-                    button.onShortPress.RemoveAllListeners(); // 移除所有监听器
-                }
-                Destroy(child.gameObject);
-            }
-        }
-
+        #region Model Management
         [ContextMenu("ShowModels")]
-        public void ShowModels() 
+        public void ShowModels()
         {
-            // 移除先前所有的card
             RemoveModels();
-            // system card
-            AddCharacterCard("添加新模型", addNewModelSprite);
-            AddCharacterCard("移除当前模型", removeModelSprite);
-
-            // user card
-            string infoUrl = $"{baseUrl}/live2d-models/info";
-            StartCoroutine(LoadModelsFromWeb(infoUrl, LocalPath("live2d-models/info.json")));
+            AddSystemCards();
+            StartCoroutine(LoadModelInfo());
         }
 
         [ContextMenu("LoadModel")]
         public void LoadModel()
         {
-            if (!string.IsNullOrEmpty(character))
+            if (string.IsNullOrEmpty(character)) return;
+            // remember
+            SettingsManager.Instance.UpdateSetting("Live2D.CurrentModel", character);
+            string modelPath = $"live2d-models/{character}/{character}.model3.json";
+            string absolutePath = GetLocalPath(modelPath);
+            
+            if (File.Exists(absolutePath))
             {
-                string modelUrl = $"{baseUrl}/live2d-models/{character}/{character}.model3.json";
-                string absolutePath = LocalPath($"live2d-models/{character}/{character}.model3.json");
+                StartCoroutine(LoadModelFromLocal(absolutePath));
+            }
+            else
+            {
+                string modelUrl = $"{baseUrl}/{modelPath}";
                 StartCoroutine(LoadModelFromWeb(modelUrl, absolutePath));
             }
         }
 
-        public void UnloadModel(string c)
+        public void UnloadModel(string modelName)
         {
-            if (!string.IsNullOrEmpty(c) && loadedModels.Contains(c)) 
-            {
-                GameObject live2dObject = parentObject.transform.Find(c).gameObject;
-                
-                // 释放纹理资源
-                var renderers = live2dObject.GetComponentsInChildren<Renderer>();
-                foreach (var renderer in renderers)
-                {
-                    if (renderer.material != null)
-                    {
-                        Texture2D texture = renderer.material.mainTexture as Texture2D;
-                        if (texture != null)
-                        {
-                            Resources.UnloadAsset(texture);
-                        }
-                        Destroy(renderer.material);
-                    }
-                }
+            if (string.IsNullOrEmpty(modelName) || !loadedModels.Contains(modelName)) return;
 
-                Destroy(live2dObject);
-                loadedModels.Remove(c);
+            Transform modelTransform = parentObject.transform.Find(modelName);
+            if (modelTransform == null) return;
+
+            GameObject live2dObject = modelTransform.gameObject;
+            foreach (var renderer in live2dObject.GetComponentsInChildren<Renderer>())
+            {
+                if (renderer.material?.mainTexture is Texture2D texture)
+                {
+                    Resources.UnloadAsset(texture);
+                }
+                Destroy(renderer.material);
             }
+
+            Destroy(live2dObject);
+            loadedModels.Remove(modelName);
         }
 
         [ContextMenu("UnloadModels")]
         public void UnloadModels()
         {
-            var tmps = new List<string>(loadedModels);
-            foreach (string character in tmps)
+            foreach (string model in new List<string>(loadedModels))
             {
-                UnloadModel(character);
+                UnloadModel(model);
             }
-            loadedModels.Clear();
+        }
+        #endregion
+
+        #region UI Management
+        public void RemoveModels()
+        {
+            if (modelScrollRect == null || !modelScrollRect.IsActive()) return;
+            foreach (Transform child in modelScrollRect.content)
+            {
+                if (child.TryGetComponent<LongPressButton>(out var button))
+                {
+                    button.onShortPress.RemoveAllListeners();
+                }
+                Destroy(child.gameObject);
+            }
         }
 
-        private IEnumerator LoadModelsFromWeb(string infoUrl, string absolutePath) 
+        private void AddSystemCards()
         {
-            string jsonPath = null;
-            yield return Download(infoUrl, absolutePath, r => jsonPath = r.Success ? r.FilePath : null);
-            Debug.Log("INFO: " + infoUrl + " " + absolutePath);
-            if (jsonPath == null) {
+            AddCharacterCard("添加新模型", addNewModelSprite, () =>
+                DebugWrapper.Instance.Log("请到后端live2d-models文件夹下手动放入模型文件夹"));
+            AddCharacterCard("移除当前模型", removeModelSprite, UnloadModels);
+        }
+        #endregion
+
+        #region Loading Coroutines
+        private IEnumerator LoadModelInfo()
+        {
+            string localModelsPath = GetLocalPath("live2d-models");
+            string infoPath = "live2d-models/info";
+            string absInfoPath = GetLocalPath($"{infoPath}.json");
+            string infoUrl = $"{baseUrl}/{infoPath}";
+
+            // 用于存储所有模型信息的集合
+            modelInfos.Clear();
+            HashSet<ModelInfo> localModels = new ();
+
+            // 1. 扫描本地模型文件夹（本地优先）
+            Live2DModelsInfo localInfo = ScanLocalModels(localModelsPath);
+            if (localInfo != null && localInfo.characters != null)
+            {
+                foreach (var model in localInfo.characters)
+                {
+                    localModels.Add(model);
+                    modelInfos.Add(model);
+                    AddCharacterCard(model);
+                }
+                Debug.LogWarning($"Found {localInfo.count} local models");
+            }
+
+            if (File.Exists(absInfoPath)) {
+                File.Delete(absInfoPath);
+            }
+            // 2. 从网络获取模型信息并合并（仅添加不存在的模型）
+            yield return DownloadFile(infoUrl, absInfoPath);
+            if (TryParseJson<Live2DModelsInfo>(absInfoPath, out var webInfo))
+            {
+                foreach (var model in webInfo.characters)
+                {
+                    // 只有当本地不存在同名模型时才添加网络模型
+                    if (!localModels.Any(m => m.name == model.name))
+                    {
+                        modelInfos.Add(model);
+                        AddCharacterCard(model);
+                    }
+                }
+                Debug.LogWarning($"Found {webInfo.count} web models, added only non-duplicates");
+            }
+
+            OnModelsInfoLoaded?.Invoke();
+        }
+
+        // 扫描本地模型文件夹
+        private Live2DModelsInfo ScanLocalModels(string localModelsPath)
+        {
+            if (!Directory.Exists(localModelsPath))
+            {
+                return new Live2DModelsInfo { type = "local", count = 0, characters = Array.Empty<ModelInfo>() };
+            }
+
+            var modelFolders = Directory.GetDirectories(localModelsPath);
+            List<ModelInfo> localModels = new List<ModelInfo>();
+
+            foreach (string folder in modelFolders)
+            {
+                string modelName = Path.GetFileName(folder);
+                string modelFile = Path.Combine(folder, $"{modelName}.model3.json");
+                string avatarFile = Path.Combine(folder, $"{modelName}.png");
+
+                if (File.Exists(modelFile))
+                {
+                    localModels.Add(new ModelInfo
+                    {
+                        name = modelName,
+                        avatar = $"live2d-models/{modelName}/{modelName}.png" , // 如果存在则设置为相对路径，否则为null
+                        model_path = $"live2d-models/{modelName}/{modelName}.model3.json"
+                    });
+                }
+            }
+
+            return new Live2DModelsInfo
+            {
+                type = "local",
+                count = localModels.Count,
+                characters = localModels.ToArray()
+            };
+        }
+
+
+        private IEnumerator LoadModelFromLocal(string absolutePath)
+        {
+            yield return LoadModelCore(absolutePath);
+        }
+
+        private IEnumerator LoadModelFromWeb(string modelUrl, string absolutePath)
+        {
+            yield return DownloadFile(modelUrl, absolutePath);
+            yield return LoadModelCore(absolutePath);
+        }
+
+        private IEnumerator LoadModelCore(string absolutePath)
+        {
+            string name = Path.GetFileNameWithoutExtension(Path.GetFileNameWithoutExtension(absolutePath));
+            
+            var modelJson = CubismModel3Json.LoadAtPath(absolutePath, FileManager.LoadAssetAtPath);
+            if (modelJson == null)
+            {
+                LogError("Failed to parse model JSON");
                 yield break;
             }
-            Debug.LogWarning("LoadModelsFromWeb:" + jsonPath);
-            var info = JsonConvert.DeserializeObject<Live2DModelsInfo>(File.ReadAllText(jsonPath));
-            if (info == null) {
-                Debug.LogError("Failed to parse live2d-models JSON");
-            }
-            Debug.LogWarning($"Found: {info.count} models");
-            modelInfos = new (info.characters);
-            
-            foreach (var modelInfo in modelInfos)
+
+            yield return DownloadReferencedFiles(modelJson);
+            var model = modelJson.ToModel();
+
+            if (model != null)
             {
-                AddCharacterCard(modelInfo);
+                PostInitModel(model, absolutePath);
+                loadedModels.Add(name);
+                Debug.Log("Live2D Model Loaded Successfully!");
             }
-            onModelsInfoLoaded?.Invoke();
-        }
-
-        
-        public void FitModelSize() 
-        {
-            var scaleFactor = modelSizeScrollbar.value;
-            if (currentModel != null) {
-                currentModel.transform.localScale = scaleFactor * new Vector3(1200, 1200, 0) + new Vector3(0, 0, 1);
+            else
+            {
+                LogError("Failed to instantiate Live2D Model");
             }
-
+            OnModelsInfoLoaded?.Invoke();
         }
+        #endregion
 
+        #region Helper Methods
         private void AddCharacterCard(ModelInfo modelInfo)
         {
-            if (!modelScrollRect.IsActive()) {
-                return;
-            }
-            var card = Instantiate(characterCardPrefab, modelScrollRect.content.transform);
-                
-            var textObj = card.GetComponentInChildren<TMP_Text>();
-            textObj.text = modelInfo.name; // 设置名称
+            if (!modelScrollRect.gameObject.activeInHierarchy) return;
 
-            if (modelInfo.avatar != null) {
-                var avatarUrl = $"{baseUrl}/{modelInfo.avatar}";
-                var avatarManager = card.GetComponent<AvatarManager>();
-                var folderPath = Path.Combine(Application.temporaryCachePath, modelInfo.avatar);
-                Debug.Log($"avatarUrl: {avatarUrl}, folderPath: {folderPath}");
-                avatarManager.SetAvatar(avatarUrl, folderPath);
+            var card = Instantiate(characterCardPrefab, modelScrollRect.content);
+            card.GetComponentInChildren<TMP_Text>().text = modelInfo.name;
+
+            if (!string.IsNullOrEmpty(modelInfo.avatar))
+            {
+                SetupAvatar(card, modelInfo.avatar);
             }
 
             var button = card.GetComponent<LongPressButton>();
-            button.onShortPress.AddListener(() => {
+            button.onShortPress.AddListener(() =>
+            {
                 UnloadModel(character);
                 character = modelInfo.name;
                 LoadModel();
             });
         }
 
-        private void AddCharacterCard(string c_name, Sprite sprite)
+        private void AddCharacterCard(string name, Sprite sprite, Action onClick)
         {
-            var card = Instantiate(characterCardPrefab, modelScrollRect.content.transform);
-            var textObj = card.GetComponentInChildren<TMP_Text>();
-            textObj.text = c_name;
-            var avatarManager = card.GetComponent<AvatarManager>();
-            avatarManager.avatarImage.sprite = sprite;
-            var button = card.GetComponent<LongPressButton>();
-            if (c_name.Contains("添加")) {
-                button.onShortPress.AddListener(() => {
-                    DebugWrapper.Instance.Log("请到后端live2d-models文件夹下手动放入模型文件夹");
-                });
-            }
-            else if (c_name.Contains("移除")) {
-                button.onShortPress.AddListener(() => {
-                    UnloadModels();
-                });
-            }
-        }
-        
-
-        private IEnumerator LoadModelFromWeb(string modelUrl, string absolutePath)
-        {
-            string jsonPath = null;
-            yield return Download(modelUrl, absolutePath, r => jsonPath = r.Success ? r.FilePath : null);
-            string lastPart = Path.GetFileName(modelUrl);
-            string name = lastPart.Split('.')[0];
-
-            if (jsonPath == null)
-            {
-                var err = $"Failed to download {lastPart}";
-                Debug.LogError(err);
-                DebugWrapper.Instance.Log(err, Color.red);
-                yield break;
-            }
-
-            Debug.LogWarning($"jsonPath: {jsonPath}");
-
-            var modelJson = CubismModel3Json.LoadAtPath(jsonPath, FileManager.LoadAssetAtPath);
-            if (modelJson == null)
-            {
-                var err = "Failed to parse model JSON";
-                Debug.LogError(err);
-                DebugWrapper.Instance.Log(err, Color.red);
-                yield break;
-            }
+            var card = Instantiate(characterCardPrefab, modelScrollRect.content);
+            card.GetComponentInChildren<TMP_Text>().text = name;
+            card.GetComponent<AvatarManager>().avatarImage.sprite = sprite;
             
-            yield return DownloadReferencedFiles(modelJson);
-            var model = modelJson.ToModel();
-
-            if (model != null)
-            {
-                PostInitModel(model, jsonPath);
-                loadedModels.Add(name);
-                var msg = "Live2D Model Loaded Successfully!";
-                Debug.Log(msg);
-                DebugWrapper.Instance.Log(msg);
-            }
-            else
-            {
-                var err = "Failed to instantiate Live2D Model";
-                Debug.LogError(err);
-                DebugWrapper.Instance.Log(err, Color.red);
-            }
-            onModelsInfoLoaded?.Invoke();
+            var button = card.GetComponent<LongPressButton>();
+            button.onShortPress.AddListener(() => onClick?.Invoke());
         }
 
+        private void SetupAvatar(GameObject card, string avatarPath)
+        {
+            string avatarUrl = $"{baseUrl}/{avatarPath}";
+            string localPath = GetLocalPath(avatarPath);
+            card.GetComponent<AvatarManager>().SetAvatar(avatarUrl, localPath);
+        }
+
+        private IEnumerator DownloadFile(string url, string absolutePath)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(absolutePath));
+            yield return Download(url, absolutePath, r =>
+            {
+                if (!r.Success)
+                {
+                    LogError($"Download failed: {Path.GetFileName(absolutePath)}: {r.ErrorMessage}");
+                }
+            });
+        }
+
+        private IEnumerator DownloadReferencedFiles(CubismModel3Json modelJson)
+        {
+            var refs = modelJson.FileReferences;
+            yield return DownloadIfNeeded(refs.Moc);
+            if (refs.Textures != null)
+                foreach (string texture in refs.Textures)
+                    yield return DownloadIfNeeded(texture);
+            yield return DownloadIfNeeded(refs.Physics);
+            yield return DownloadIfNeeded(refs.Pose);
+            yield return DownloadIfNeeded(refs.DisplayInfo);
+            yield return DownloadIfNeeded(refs.UserData);
+            if (refs.Expressions != null)
+                foreach (var exp in refs.Expressions)
+                    yield return DownloadIfNeeded(exp.File);
+            if (refs.Motions.Motions != null && refs.Motions.GroupNames != null)
+                for (int i = 0; i < Math.Min(refs.Motions.Motions.Length, refs.Motions.GroupNames.Length); i++)
+                    if (refs.Motions.Motions[i] != null)
+                        foreach (var m in refs.Motions.Motions[i])
+                        {
+                            yield return DownloadIfNeeded(m.File);
+                            yield return DownloadIfNeeded(m.Sound);
+                        }
+        }
+
+        private IEnumerator DownloadIfNeeded(string relativePath)
+        {
+            if (string.IsNullOrEmpty(relativePath)) yield break;
+
+            string absolutePath = GetLocalPath($"live2d-models/{character}/{relativePath}");
+            if (File.Exists(absolutePath)) yield break;
+
+            string url = $"{baseUrl}/live2d-models/{character}/{relativePath}".Replace("\\", "/");
+            yield return DownloadFile(url, absolutePath);
+        }
+
+        private IEnumerator Download(string url, string absolutePath, Action<DownloadResult> onComplete)
+        {
+            bool done = false;
+            DownloadResult result = null;
+            HttpDownloader.Instance.Download(url, absolutePath, r =>
+            {
+                if (r.Success && r.FilePath != absolutePath)
+                {
+                    FileManager.MoveFile(r.FilePath, absolutePath);
+                    r.FilePath = absolutePath;
+                }
+                result = r;
+                done = true;
+            });
+
+            yield return new WaitUntil(() => done);
+            onComplete?.Invoke(result);
+        }
+
+        private string GetLocalPath(string relativePath) =>
+            Path.Combine(Application.temporaryCachePath, relativePath).Replace("/", Path.DirectorySeparatorChar.ToString());
+
+        private bool TryParseJson<T>(string path, out T result)
+        {
+            try
+            {
+                string json = File.ReadAllText(path);
+                result = JsonConvert.DeserializeObject<T>(json);
+                return result != null;
+            }
+            catch (Exception e)
+            {
+                LogError($"Failed to parse JSON at {path}: {e.Message}");
+                result = default;
+                return false;
+            }
+        }
+
+        private void LogError(string message)
+        {
+            Debug.LogError(message);
+            DebugWrapper.Instance.Log(message, Color.red);
+        }
+
+        public void FitModelSize()
+        {
+            if (currentModel == null) return;
+            scaleFactor = modelSizeScrollbar.value;
+            currentModel.transform.localScale = scaleFactor * new Vector3(maxModelSize, maxModelSize, 0) + Vector3.forward;
+        }
+        #endregion
+
+        #region Model Initialization
         private void PostInitModel(CubismModel model, string model3JsonPath)
         {
-            #region Unity Part
-            Transform t = model.transform;
-            t.parent = parentObject.transform;
-            t.localPosition = position;
-            t.localScale = scale;
+            SetupTransform(model);
+            SetupLive2DComponents(model, model3JsonPath);
             currentModel = model;
-            #endregion
+            
+        }
 
-            #region Live2D Part
+        private void SetupTransform(CubismModel model)
+        {
+            Transform t = model.transform;
+            t.SetParent(parentObject.transform, false);
+            t.localPosition = position;
+            scale = scaleFactor * new Vector3(maxModelSize, maxModelSize, 0) + Vector3.forward;
+            t.localScale = scale;
+        }
 
+        private void SetupLive2DComponents(CubismModel model, string model3JsonPath)
+        {
             PostInitModelLookAt(model);
-
             PostInitModelMouth(model);
-
             PostInitModelExpMotion(model, model3JsonPath);
-  
             PostInitModelRaycast(model);
-
-            #endregion
         }
 
         private void PostInitModelMouth(CubismModel model) 
@@ -344,7 +492,7 @@ namespace Live2D
         {
             Transform t = model.transform;
             string[] paramIds = { "ParamAngleX", "ParamAngleY", "ParamEyeBallX", "ParamEyeBallY" };
-            float maxFactor = model.Parameters[0].MaximumValue;
+            float maxFactor = 30f;
             foreach (var paramId in paramIds)
             {
                 var param = model.Parameters.FindById(paramId)?.AddComponent<CubismLookParameter>();
@@ -406,72 +554,7 @@ namespace Live2D
             var expressionSetup = model.AddComponent<DynamicExpressionSetup>();
             expressionSetup.Initialize(model3JsonPath);  
         }
+        #endregion
 
-        private IEnumerator DownloadReferencedFiles(CubismModel3Json modelJson)
-        {
-            var refs = modelJson.FileReferences;
-            yield return DownloadIfNeeded(refs.Moc);
-            if (refs.Textures != null)
-                foreach (string texture in refs.Textures)
-                    yield return DownloadIfNeeded(texture);
-            yield return DownloadIfNeeded(refs.Physics);
-            yield return DownloadIfNeeded(refs.Pose);
-            yield return DownloadIfNeeded(refs.DisplayInfo);
-            yield return DownloadIfNeeded(refs.UserData);
-            if (refs.Expressions != null)
-                foreach (var exp in refs.Expressions)
-                    yield return DownloadIfNeeded(exp.File);
-            if (refs.Motions.Motions != null && refs.Motions.GroupNames != null)
-                for (int i = 0; i < Math.Min(refs.Motions.Motions.Length, refs.Motions.GroupNames.Length); i++)
-                    if (refs.Motions.Motions[i] != null)
-                        foreach (var m in refs.Motions.Motions[i])
-                        {
-                            yield return DownloadIfNeeded(m.File);
-                            yield return DownloadIfNeeded(m.Sound);
-                        }
-        }
-
-        private IEnumerator DownloadIfNeeded(string relativePath)
-        {
-            if (string.IsNullOrEmpty(relativePath)) yield break;
-
-            string url = $"{baseUrl}/live2d-models/{character}/{relativePath}".Replace("\\", "/");
-            string absolutePath = LocalPath($"live2d-models/{character}/{relativePath}");
-            Debug.Log($"DownloadIfNeeded: {absolutePath}");
-            
-            if (File.Exists(absolutePath)) yield break;
-
-            yield return Download(url, absolutePath, r =>
-            {
-                if (!r.Success)
-                    Debug.LogError($"Download failed: {relativePath}: {r.ErrorMessage}");
-            });
-        }
-
-
-        private IEnumerator Download(string url, string absolutePath, Action<DownloadResult> onComplete = null)
-        {
-            
-            bool done = false;
-            DownloadResult result = null;
-            HttpDownloader.Instance.Download(url, absolutePath, r =>
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(absolutePath));
-                if (r.Success && r.FilePath != absolutePath)
-                {
-                    FileManager.MoveFile(r.FilePath, absolutePath);
-                    r.FilePath = absolutePath;
-                }
-                result = r;
-                done = true;
-            });
-
-            yield return new WaitUntil(() => done);
-            onComplete?.Invoke(result);
-        }
-
-        private string LocalPath(string relativePath) =>
-            Path.Combine(Application.temporaryCachePath, relativePath).Replace("/", Path.DirectorySeparatorChar.ToString());
-       
     }
 }

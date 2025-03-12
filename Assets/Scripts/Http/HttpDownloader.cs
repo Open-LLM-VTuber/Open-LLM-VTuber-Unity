@@ -26,7 +26,7 @@ public class HttpDownloader : InitOnceSingleton<HttpDownloader>
         DownloadResult result = new DownloadResult();
 
         // 如果文件存在，跳过, unity读取图片时会占用，删不掉
-        if (File.Exists(absolutePath))
+        if (File.Exists(absolutePath) && new FileInfo(absolutePath).Length > 0)
         {
             result.Success = true;
             result.FilePath = absolutePath;
@@ -55,6 +55,9 @@ public class HttpDownloader : InitOnceSingleton<HttpDownloader>
             {
                 result.Success = false;
                 result.ErrorMessage = www.error; // 记录错误信息
+                if (File.Exists(absolutePath)) {
+                    File.Delete(absolutePath);
+                }
             }
 
             // 调用回调函数，返回结果

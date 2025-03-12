@@ -28,6 +28,9 @@ public class Live2DSettings
 {
     public bool PointerInteractive { get; set; } = false;
     public bool EnableScrollToResize { get; set; } = false;
+    public string CurrentModel { get; set; } = "mao_pro";
+    public string MaxModelSize {get; set;} = "2400";
+    public string ScaleFactor {get; set;} = "0.5";
 }
 
 [Serializable]
@@ -89,6 +92,12 @@ public class SettingsManager : MonoBehaviour
         {
             Destroy(gameObject); // 如果已存在实例，销毁新的实例
         }
+    }
+
+    void OnDestroy()
+    {
+        // 退出时保存一下哦~
+        SaveSettings();
     }
 
     private void Initialize()

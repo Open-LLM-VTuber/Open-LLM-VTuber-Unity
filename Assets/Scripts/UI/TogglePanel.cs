@@ -21,7 +21,6 @@ public class TogglePanel : MonoBehaviour
         {
             animator.SetTrigger("doHide");
         }
-        Debug.Log("isVisible: " + isVisible);
     }
 
     public void OnAnimationStart()

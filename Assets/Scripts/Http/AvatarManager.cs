@@ -22,19 +22,16 @@ public class AvatarManager : MonoBehaviour
     /// 加载并处理本地图片
     /// </summary>
     private IEnumerator LoadAndProcessImage(string filePath)
-    {
-        lock (lockObj) {
-            Texture2D texture = LoadTextureFromFile(filePath);
-            if (texture == null)
-            {
-                Debug.LogError("无法加载图片: " + filePath);
-                yield break;
-            }
-
-            Texture2D resizedTexture = ResizeTexture(texture, width, height);
-            Sprite sprite = TextureToSprite(resizedTexture);
-            avatarImage.sprite = sprite;
+    {   
+        Texture2D texture = LoadTextureFromFile(filePath);
+        if (texture == null)
+        {
+            Debug.LogError("无法加载图片: " + filePath);
+            yield break;
         }
+        Texture2D resizedTexture = ResizeTexture(texture, width, height);
+        Sprite sprite = TextureToSprite(resizedTexture);
+        avatarImage.sprite = sprite;
         
     }
 
@@ -43,7 +40,10 @@ public class AvatarManager : MonoBehaviour
     /// </summary>
     private Texture2D LoadTextureFromFile(string filePath)
     {
-        byte[] fileData = File.ReadAllBytes(filePath);
+        byte[] fileData = null;
+        lock (lockObj) {
+           fileData = File.ReadAllBytes(filePath);
+        }
         Texture2D texture = new Texture2D(2, 2);
         if (texture.LoadImage(fileData))
         {

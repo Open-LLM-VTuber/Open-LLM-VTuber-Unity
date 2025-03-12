@@ -17,7 +17,6 @@ public class BaseOption : MonoBehaviour
                 var intValue = PlayerPrefs.GetInt(option.settingKey, 0);
                 strValue = intValue != 0 ? "True" : "False";
             }
-
             SettingsManager.Instance.UpdateSetting(option.settingKey, strValue);
             Debug.Log("Updated: " + option.settingKey + ": " + strValue);
         }

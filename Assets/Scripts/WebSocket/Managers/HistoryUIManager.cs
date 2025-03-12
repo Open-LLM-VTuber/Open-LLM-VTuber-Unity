@@ -112,7 +112,6 @@ public class HistoryUIManager : MonoBehaviour
                 string avatarUrl = new UriBuilder(baseUrl) { Path = $"avatars/{message.avatar}" }.ToString();
                 var name = Path.GetFileNameWithoutExtension(message.avatar);
                 var absolutePath = Path.Combine(Application.temporaryCachePath, "live2d-models", name, message.avatar);
-                Debug.Log($"avatarUrl: {avatarUrl}, folderPath: {absolutePath}");
                 avatarManager.SetAvatar(avatarUrl, absolutePath);
             }
         }

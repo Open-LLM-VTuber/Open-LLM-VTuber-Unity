@@ -10,7 +10,6 @@ namespace Live2D {
 
         private LongPressButton left, right;
 
-        
         public int currentModelIndex = 0;
 
         void Start()
@@ -19,7 +18,7 @@ namespace Live2D {
             right = rightButton.GetComponent<LongPressButton>();
             left.onShortPress.AddListener(OnLeftButtonClick);
             right.onShortPress.AddListener(OnRightButtonClick);
-            loadModelWeb.onModelsInfoLoaded += InitCurrentModelIndex;
+            loadModelWeb.OnModelsInfoLoaded += InitCurrentModelIndex;
             
         }
 
@@ -31,7 +30,7 @@ namespace Live2D {
         public void Destroy()
         {
             loadModelWeb.RemoveModels();
-            loadModelWeb.onModelsInfoLoaded -= InitCurrentModelIndex;
+            loadModelWeb.OnModelsInfoLoaded -= InitCurrentModelIndex;
             left.onShortPress.RemoveAllListeners();
             right.onShortPress.RemoveAllListeners();
         }

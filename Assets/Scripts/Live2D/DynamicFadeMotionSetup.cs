@@ -104,7 +104,6 @@ namespace Live2D
                 string modelJsonDir = Path.GetDirectoryName(modelJsonPath);
                 motionClipsByGroup = new Dictionary<string, List<AnimationClip>>();
 
-                motionClipsByGroup = new ();
                 // 加载每个 Motion 并缓存到字典
                 for (int i = 0; i < motions.GroupNames.Length; i++)
                 {

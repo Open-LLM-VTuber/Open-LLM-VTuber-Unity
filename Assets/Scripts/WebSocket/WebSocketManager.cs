@@ -151,6 +151,8 @@ public sealed class WebSocketManager : InitOnceSingleton<WebSocketManager>
             Debug.LogWarning("Sent Type: " + message.type);
             string json = JsonConvert.SerializeObject(message);
             ws.Send(json);
+        } else {
+            DebugWrapper.Instance.Log("Lost connection with the server, sending failed.", Color.red);
         }
     }
 
