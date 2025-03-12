@@ -3,6 +3,14 @@
 ## 介绍
 这是原项目的移动端适配版本，基本上开箱即用。
 
+## 准备工作
+1. 使用dev版本的后端作为服务器。克隆对应的仓库到本地：
+```bash
+git clone https://github.com/Open-LLM-VTuber/Open-LLM-VTuber.git -b dev --recursive
+```
+2. 按照README的指引安装好依赖。如果已经有了main版本的后端，可以将`.venv`,`live2d-models`文件夹移动到dev版本的文件夹里。
+3. 运行dev版后端。
+
 ## Windows电脑作为服务器时，如何使用？
 
 1. 到Release页面下载Vifu.apk后安装到手机上。
@@ -29,4 +37,4 @@
 
 6. 在手机上点击灰色齿轮按钮，看到右边弹出菜单中的Websocket地址和BaseUrl配置，把127.0.0.1换成192.168.137.1即可。点击保存配置，退出。
 
-7. 重新进入，等待Live2D人物刷新。
+7. 重新进入，等待Live2D人物刷新。如果没有出现人物，可以尝试清理应用缓存再重进入。
